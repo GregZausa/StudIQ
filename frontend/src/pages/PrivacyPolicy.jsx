@@ -3,7 +3,9 @@ import { useNavigate } from "react-router-dom";
 const Section = ({ title, children }) => (
   <div className="mb-8">
     <h2 className="text-xl font-bold text-white mb-3">{title}</h2>
-    <div className="text-slate-300 text-sm leading-relaxed space-y-3">{children}</div>
+    <div className="text-slate-300 text-sm leading-relaxed space-y-3">
+      {children}
+    </div>
   </div>
 );
 
@@ -11,10 +13,8 @@ const PrivacyPolicy = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-black to-slate-900 text-white">
+    <div className="min-h-screen bg-linear-to-br from-slate-950 via-black to-slate-900 text-white">
       <div className="max-w-3xl mx-auto px-4 py-16">
-
-        {/* Back */}
         <button
           onClick={() => navigate("/")}
           className="text-slate-400 hover:text-white text-sm mb-8 flex items-center gap-2 transition-colors cursor-pointer"
@@ -24,38 +24,61 @@ const PrivacyPolicy = () => {
 
         <h1 className="text-4xl font-bold mb-2">Privacy Policy</h1>
         <p className="text-slate-400 text-sm mb-10">
-          Last updated: {new Date().toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" })}
+          Last updated:{" "}
+          {new Date().toLocaleDateString("en-PH", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })}
         </p>
 
         <Section title="1. Overview">
           <p>
             Stud IQ ("we", "us", or "our") operates the website{" "}
-            <span className="text-indigo-400">student-tool-app.vercel.app</span> (the "Service").
-            This page informs you of our policies regarding the collection, use, and disclosure
-            of personal data when you use our Service and the choices you have associated with that data.
+            <span className="text-indigo-400">student-tool-app.vercel.app</span>{" "}
+            (the "Service"). This page informs you of our policies regarding the
+            collection, use, and disclosure of personal data when you use our
+            Service and the choices you have associated with that data.
           </p>
           <p>
-            We are committed to protecting your privacy. By using Stud IQ, you agree to the
-            collection and use of information in accordance with this policy.
+            We are committed to protecting your privacy. By using Stud IQ, you
+            agree to the collection and use of information in accordance with
+            this policy.
           </p>
         </Section>
 
         <Section title="2. Information We Collect">
-          <p>We collect minimal information to provide and improve our Service:</p>
+          <p>
+            We collect the following information to provide and improve our
+            Service:
+          </p>
           <ul className="list-disc pl-5 space-y-2">
             <li>
-              <strong className="text-white">Name (optional):</strong> When you set up your profile,
-              you may provide a name or nickname. This is stored to personalize your experience.
+              <strong className="text-white">Email address:</strong> Required to
+              create an account and log in to the Service. Your email is used
+              solely for authentication and account recovery purposes.
             </li>
             <li>
-              <strong className="text-white">Anonymous User ID:</strong> We generate a unique
-              anonymous identifier (UUID) stored in your browser's local storage. This allows us
-              to save your data (todos, deadlines, notes, decks) without requiring an account.
+              <strong className="text-white">Password:</strong> Stored securely
+              using industry-standard encryption by Supabase Auth. We never
+              store your password in plain text and do not have access to it.
             </li>
             <li>
-              <strong className="text-white">Usage Data:</strong> We may collect information on
-              how the Service is accessed and used. This may include your browser type, pages
-              visited, time and date of visit, and other diagnostic data.
+              <strong className="text-white">Display name (optional):</strong> A
+              name or nickname you provide during onboarding to personalize your
+              dashboard experience.
+            </li>
+            <li>
+              <strong className="text-white">Study data:</strong> Content you
+              create within the Service, including to-do items, deadlines,
+              notes, learning materials, and flashcard decks. This data is
+              linked to your account and stored securely.
+            </li>
+            <li>
+              <strong className="text-white">Usage data:</strong> We may collect
+              information on how the Service is accessed and used, including
+              your browser type, pages visited, time and date of visit, and
+              other diagnostic data.
             </li>
           </ul>
         </Section>
@@ -63,24 +86,34 @@ const PrivacyPolicy = () => {
         <Section title="3. How We Use Your Data">
           <p>We use the collected data for the following purposes:</p>
           <ul className="list-disc pl-5 space-y-2">
-            <li>To provide and maintain our Service</li>
-            <li>To save your personal study data (tasks, notes, deadlines, flashcard decks)</li>
+            <li>To create and manage your account</li>
+            <li>To authenticate you securely when you log in</li>
+            <li>
+              To save and sync your personal study data (tasks, notes,
+              deadlines, flashcard decks) across devices
+            </li>
             <li>To personalize your dashboard experience</li>
+            <li>To send account-related emails (e.g. password reset)</li>
             <li>To detect, prevent, and address technical issues</li>
-            <li>To improve the overall functionality and user experience of our Service</li>
+            <li>
+              To improve the overall functionality and user experience of our
+              Service
+            </li>
           </ul>
         </Section>
 
         <Section title="4. Google AdSense & Cookies">
           <p>
-            Stud IQ uses Google AdSense to display advertisements. Google AdSense uses cookies
-            and similar tracking technologies to serve ads based on your prior visits to our
-            website or other websites on the internet.
+            Stud IQ uses Google AdSense to display advertisements. Google
+            AdSense uses cookies and similar tracking technologies to serve ads
+            based on your prior visits to our website or other websites on the
+            internet.
           </p>
           <p>
-            Google's use of advertising cookies enables it and its partners to serve ads to you
-            based on your visit to our site and/or other sites on the Internet. You may opt out
-            of personalized advertising by visiting{" "}
+            Google's use of advertising cookies enables it and its partners to
+            serve ads to you based on your visit to our site and/or other sites
+            on the Internet. You may opt out of personalized advertising by
+            visiting{" "}
             <a
               href="https://www.google.com/settings/ads"
               target="_blank"
@@ -92,7 +125,8 @@ const PrivacyPolicy = () => {
             .
           </p>
           <p>
-            For more information on how Google uses data when you use our site, please visit{" "}
+            For more information on how Google uses data when you use our site,
+            please visit{" "}
             <a
               href="https://policies.google.com/technologies/partner-sites"
               target="_blank"
@@ -105,16 +139,23 @@ const PrivacyPolicy = () => {
           </p>
         </Section>
 
-        <Section title="5. Data Storage">
+        <Section title="5. Data Storage & Security">
           <p>
-            Your study data (todos, notes, deadlines, flashcard decks) is stored in Supabase,
-            a secure cloud database provider. Data is associated with your anonymous UUID and
-            is not linked to any personally identifiable information unless you choose to provide
-            your name.
+            Your account credentials and study data are stored in Supabase, a
+            secure cloud database provider. Authentication is handled by
+            Supabase Auth, which uses industry-standard encryption and security
+            practices.
           </p>
           <p>
-            We retain your data for as long as your anonymous session is active. You may request
-            deletion of your data at any time by contacting us.
+            Your study data (todos, notes, deadlines, flashcard decks) is
+            protected by Row Level Security (RLS) policies — meaning your data
+            is only accessible to your authenticated account and cannot be read
+            by other users.
+          </p>
+          <p>
+            We retain your data for as long as your account is active. You may
+            request deletion of your account and all associated data at any time
+            by contacting us.
           </p>
         </Section>
 
@@ -122,30 +163,76 @@ const PrivacyPolicy = () => {
           <p>We use the following third-party services:</p>
           <ul className="list-disc pl-5 space-y-2">
             <li>
-              <strong className="text-white">Supabase</strong> — database storage.{" "}
-              <a href="https://supabase.com/privacy" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300 underline">Privacy Policy</a>
+              <strong className="text-white">Supabase</strong> — database and
+              authentication.{" "}
+              <a
+                href="https://supabase.com/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-indigo-400 hover:text-indigo-300 underline"
+              >
+                Privacy Policy
+              </a>
             </li>
             <li>
-              <strong className="text-white">Google AdSense</strong> — advertising.{" "}
-              <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300 underline">Privacy Policy</a>
+              <strong className="text-white">Google AdSense</strong> —
+              advertising.{" "}
+              <a
+                href="https://policies.google.com/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-indigo-400 hover:text-indigo-300 underline"
+              >
+                Privacy Policy
+              </a>
             </li>
             <li>
-              <strong className="text-white">Open Trivia Database (OpenTDB)</strong> — quiz questions.{" "}
-              <a href="https://opentdb.com" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300 underline">Website</a>
+              <strong className="text-white">
+                Open Trivia Database (OpenTDB)
+              </strong>{" "}
+              — quiz questions.{" "}
+              <a
+                href="https://opentdb.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-indigo-400 hover:text-indigo-300 underline"
+              >
+                Website
+              </a>
+            </li>
+            <li>
+              <strong className="text-white">Formspree</strong> — contact form
+              submissions.{" "}
+              <a
+                href="https://formspree.io/legal/privacy-policy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-indigo-400 hover:text-indigo-300 underline"
+              >
+                Privacy Policy
+              </a>
             </li>
             <li>
               <strong className="text-white">Vercel</strong> — hosting.{" "}
-              <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300 underline">Privacy Policy</a>
+              <a
+                href="https://vercel.com/legal/privacy-policy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-indigo-400 hover:text-indigo-300 underline"
+              >
+                Privacy Policy
+              </a>
             </li>
           </ul>
         </Section>
 
         <Section title="7. Children's Privacy">
           <p>
-            Our Service is intended for use by students. We do not knowingly collect personally
-            identifiable information from anyone under the age of 13. If you are a parent or
-            guardian and you are aware that your child has provided us with personal data, please
-            contact us so we can take the necessary steps to remove that information.
+            Our Service is intended for use by students. We do not knowingly
+            collect personally identifiable information from anyone under the
+            age of 13. If you are a parent or guardian and you are aware that
+            your child has provided us with personal data, please contact us so
+            we can take the necessary steps to remove that information.
           </p>
         </Section>
 
@@ -154,29 +241,44 @@ const PrivacyPolicy = () => {
           <ul className="list-disc pl-5 space-y-2">
             <li>Access the personal data we hold about you</li>
             <li>Request correction of inaccurate data</li>
-            <li>Request deletion of your data</li>
+            <li>Request deletion of your account and all associated data</li>
             <li>Opt out of personalized advertising via Google Ads Settings</li>
+            <li>Request a copy of your data in a portable format</li>
           </ul>
-        </Section>
-
-        <Section title="9. Changes to This Policy">
           <p>
-            We may update our Privacy Policy from time to time. We will notify you of any changes
-            by posting the new Privacy Policy on this page and updating the "Last updated" date.
-            You are advised to review this Privacy Policy periodically for any changes.
-          </p>
-        </Section>
-
-        <Section title="10. Contact Us">
-          <p>
-            If you have any questions about this Privacy Policy, please contact us at{" "}
-            <a href="/contact" className="text-indigo-400 hover:text-indigo-300 underline">
-              our contact page
+            To exercise any of these rights, please contact us via our{" "}
+            <a
+              href="/contact"
+              className="text-indigo-400 hover:text-indigo-300 underline"
+            >
+              contact page
             </a>
             .
           </p>
         </Section>
 
+        <Section title="9. Changes to This Policy">
+          <p>
+            We may update our Privacy Policy from time to time. We will notify
+            you of any changes by posting the new Privacy Policy on this page
+            and updating the "Last updated" date. You are advised to review this
+            Privacy Policy periodically for any changes.
+          </p>
+        </Section>
+
+        <Section title="10. Contact Us">
+          <p>
+            If you have any questions about this Privacy Policy, please contact
+            us at{" "}
+            <a
+              href="/contact"
+              className="text-indigo-400 hover:text-indigo-300 underline"
+            >
+              our contact page
+            </a>
+            .
+          </p>
+        </Section>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import studIQLogo from "../../../components/res/logo.png";
 
 const Footer = () => (
   <footer className="border-t border-white/10 mt-16 py-10 px-4">
@@ -6,8 +7,8 @@ const Footer = () => (
       {/* Top row */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mb-8">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-indigo-500 rounded-xl flex items-center justify-center text-white font-bold text-sm">
-            S
+          <div className="w-8 h-8 bg-slate-800 rounded-xl flex items-center justify-center text-white font-bold text-sm">
+            <img src={studIQLogo} alt="" />
           </div>
           <div>
             <div className="text-sm font-bold text-white">Stud IQ</div>

@@ -1,28 +1,25 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../config/supabase";
 import { useUser } from "../context/UserContext";
 import AdSenseAd from "../utils/AdSenseAd";
-import FloatingLabelInput from "../components/ui/FloatingLabelInput";
 import SelectBox from "../components/ui/SelectBox";
-import {
-  StickyNote,
-  Plus,
-  Trash2,
-  X,
-  Inbox,
-  Search,
-  Check,
-} from "lucide-react";
-import { COLOR_FILTER, NOTE_COLORS } from "../utils/constants/notes.config";
-import { getColorConfig, timeAgo } from "../utils/functions/notes";
+import { StickyNote, Plus, X, Inbox } from "lucide-react";
+import { COLOR_FILTER } from "../utils/constants/notes.config";
 import NoteCard from "../components/cards/NoteCard";
 import AddNoteModal from "../components/modal/AddNoteModal";
 import { useTheme } from "../context/ThemeContext";
 import SearchBar from "../components/ui/SearchBar";
 import Header from "../components/layout/Header";
+import {
+  encryptNote,
+  decryptNotes,
+  encryptText,
+  decryptText,
+} from "../utils/crypto";
 
 const Notes = () => {
-  const { userId } = useUser();
+  const { userId, session } = useUser();
+  const { isDark } = useTheme();
 
   const [notes, setNotes] = useState([]);
   const [fetching, setFetching] = useState(true);
@@ -32,48 +29,70 @@ const Notes = () => {
   const [filterColor, setFilterColor] = useState("");
   const [filterSubject, setFilterSubject] = useState("");
 
-  const { isDark } = useTheme();
+  const authId = session?.user?.id;
 
   const fetchNotes = useCallback(async () => {
-    if (!userId) return;
+    if (!userId || !authId) return;
     setFetching(true);
+
     const { data, error } = await supabase
       .from("notes")
       .select("*")
       .eq("user_id", userId)
       .order("updated_at", { ascending: false });
 
-    if (!error) setNotes(data || []);
+    if (!error && data) {
+      const decrypted = await decryptNotes(data, authId);
+      setNotes(decrypted);
+    }
     setFetching(false);
-  }, [userId]);
+  }, [userId, authId]);
 
   useEffect(() => {
     fetchNotes();
   }, [fetchNotes]);
 
+  // ── Add — encrypt before saving ──
   const handleAdd = async (fields) => {
-    if (!userId) return;
+    if (!userId || !authId) return;
     setAdding(true);
+
+    const encrypted = await encryptNote(fields, authId);
+
     const { data, error } = await supabase
       .from("notes")
-      .insert({ ...fields, user_id: userId })
+      .insert({ ...encrypted, user_id: userId })
       .select()
       .single();
 
-    if (!error && data) setNotes((prev) => [data, ...prev]);
+    if (!error && data) {
+      const decrypted = await decryptNotes([data], authId);
+      setNotes((prev) => [decrypted[0], ...prev]);
+    }
     setAdding(false);
   };
 
   const handleUpdate = async (id, fields) => {
+    if (!authId) return;
+
+    // Encrypt only text fields, pass others (color, subject) as-is
+    const encFields = { ...fields };
+    if (fields.title) encFields.title = await encryptText(fields.title, authId);
+    if (fields.content)
+      encFields.content = await encryptText(fields.content, authId);
+
     const { data, error } = await supabase
       .from("notes")
-      .update(fields)
+      .update(encFields)
       .eq("id", id)
       .select()
       .single();
 
-    if (!error && data)
-      setNotes((prev) => prev.map((n) => (n.id === id ? data : n)));
+    if (!error && data) {
+      // Decrypt for local state
+      const decrypted = await decryptNotes([data], authId);
+      setNotes((prev) => prev.map((n) => (n.id === id ? decrypted[0] : n)));
+    }
   };
 
   const handleDelete = async (id) => {
@@ -113,7 +132,10 @@ const Notes = () => {
         buttonStyle="default"
         onClick={() => setShowModal(true)}
       />
+
       <AdSenseAd />
+
+      {/* ── Search + filters ── */}
       <div className="space-y-2 mb-5">
         <SearchBar
           placeholder="Search notes..."
@@ -149,7 +171,11 @@ const Notes = () => {
                 setFilterColor("");
                 setFilterSubject("");
               }}
-              className={`flex items-center gap-1 px-3 py-2 rounded-xl border ${isDark ? "bg-slate-800 border-slate-700 text-slate-200" : "bg-white  border-slate-200 text-slate-600"} text-xs transition-colors cursor-pointer hover:text-red-400 `}
+              className={`flex items-center gap-1 px-3 py-2 rounded-xl border text-xs transition-colors cursor-pointer hover:text-red-400 ${
+                isDark
+                  ? "bg-slate-800 border-slate-700 text-slate-200"
+                  : "bg-white border-slate-200 text-slate-600"
+              }`}
             >
               <X size={11} /> Clear
             </button>
@@ -157,6 +183,7 @@ const Notes = () => {
         </div>
       </div>
 
+      {/* ── Notes grid ── */}
       {fetching ? (
         <div className="flex items-center justify-center py-16 text-slate-300">
           <div className="text-center">
@@ -166,7 +193,7 @@ const Notes = () => {
         </div>
       ) : filtered.length === 0 ? (
         <div
-          className={` rounded-2xl border ${isDark ? "border-slate-700 text-slate-50 bg-slate-800" : "bg-slate-50 border-slate-200 text-slate-300"}  p-12 text-center `}
+          className={`rounded-2xl border p-12 text-center ${isDark ? "border-slate-700 text-slate-400 bg-slate-800" : "bg-slate-50 border-slate-200 text-slate-300"}`}
         >
           <Inbox size={32} className="mx-auto mb-2 opacity-50" />
           <div className="text-sm font-medium">

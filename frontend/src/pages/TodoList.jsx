@@ -27,10 +27,11 @@ import {
 import AddTodoForm from "../components/forms/AddTodoForm";
 import TodoItem from "../components/TodoItem";
 import { useTheme } from "../context/ThemeContext";
+import { decryptTodo, decryptTodoList, encryptTodoList } from "../utils/crypto";
 
 const TodoList = () => {
   const navigate = useNavigate();
-  const { userId } = useUser();
+  const { userId, session } = useUser();
   const { isDark } = useTheme();
 
   const [todos, setTodos] = useState([]);
@@ -43,8 +44,10 @@ const TodoList = () => {
   const [filterStatus, setFilterStatus] = useState("");
   const [sortBy, setSortBy] = useState("created_at");
 
+  const authId = session?.user?.id;
+
   const fetchTodos = useCallback(async () => {
-    if (!userId) return;
+    if (!userId || !authId) return;
     setFetching(true);
     const { data, error } = await supabase
       .from("todos")
@@ -52,7 +55,10 @@ const TodoList = () => {
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
 
-    if (!error) setTodos(data || []);
+    if (!error && data) {
+      const decrypted = await decryptTodoList(data, authId);
+      setTodos(decrypted);
+    }
     setFetching(false);
   }, [userId]);
 
@@ -61,19 +67,26 @@ const TodoList = () => {
   }, [fetchTodos]);
 
   const handleAdd = async (fields) => {
-    if (!userId) return;
+    if (!userId || !authId) return;
     setAdding(true);
+
+    const encrypted = await encryptTodoList(fields, authId);
     const { data, error } = await supabase
       .from("todos")
-      .insert({ ...fields, user_id: userId })
+      .insert({ ...encrypted, user_id: userId })
       .select()
       .single();
 
-    if (!error && data) setTodos((prev) => [data, ...prev]);
+    if (!error && data) {
+      const decrypted = await decryptTodoList([data], authId);
+      setTodos((prev) => [decrypted[0], ...prev]);
+    }
     setAdding(false);
   };
 
   const handleToggle = async (id, completed) => {
+    if (!authId) return;
+
     const { data, error } = await supabase
       .from("todos")
       .update({ completed: !completed })
@@ -81,8 +94,10 @@ const TodoList = () => {
       .select()
       .single();
 
-    if (!error && data)
-      setTodos((prev) => prev.map((t) => (t.id === id ? data : t)));
+    if (!error && data) {
+      const decrypted = await decryptTodoList([data], authId);
+      setTodos((prev) => prev.map((t) => (t.id === id ? decrypted[0] : t)));
+    }
   };
 
   const handleDelete = async (id) => {

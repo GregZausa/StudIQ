@@ -114,7 +114,6 @@ const CardForm = ({ onAdd, loading, isDark }) => {
 
       {open && (
         <div className="px-4 pb-4 border-t border-slate-100 dark:border-slate-700 pt-4 space-y-3">
-          {/* Card type */}
           <div>
             <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-1.5">
               Card type
@@ -127,7 +126,6 @@ const CardForm = ({ onAdd, loading, isDark }) => {
             />
           </div>
 
-          {/* Question */}
           <div>
             <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-1.5">
               Question
@@ -144,7 +142,6 @@ const CardForm = ({ onAdd, loading, isDark }) => {
             />
           </div>
 
-          {/* Flashcard answer */}
           {type === "flashcard" && (
             <div>
               <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-1.5">
@@ -160,7 +157,6 @@ const CardForm = ({ onAdd, loading, isDark }) => {
             </div>
           )}
 
-          {/* Multiple choice */}
           {type === "multiple_choice" && (
             <div className="space-y-2">
               <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">

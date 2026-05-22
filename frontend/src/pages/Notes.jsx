@@ -52,7 +52,6 @@ const Notes = () => {
     fetchNotes();
   }, [fetchNotes]);
 
-  // ── Add — encrypt before saving ──
   const handleAdd = async (fields) => {
     if (!userId || !authId) return;
     setAdding(true);

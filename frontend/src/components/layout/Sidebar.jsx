@@ -3,7 +3,7 @@ import { useUser } from "../../context/UserContext";
 import { useTheme } from "../../context/ThemeContext";
 import { signOut } from "../../config/user";
 import ToggleButton from "../ui/ToggleButton";
-import studIQLogo from "../res/logo.png";
+import studIQLogo from "../res/stud_iq_logo_dark_mode.png";
 import {
   LayoutDashboard,
   CheckSquare,
@@ -17,6 +17,7 @@ import {
   ChevronRight,
   LogOut,
 } from "lucide-react";
+import FlameWidget from "../widgets/FlameWidget";
 
 const NAV_ITEMS = [
   {
@@ -65,7 +66,6 @@ const Sidebar = ({ onClose }) => {
 
   return (
     <aside className={`flex flex-col h-full border-r w-60 ${sidebarBg}`}>
-      {/* ── Brand ── */}
       <div
         className={`flex items-center justify-between px-5 py-5 border-b ${isDark ? "border-slate-700" : "border-slate-100"}`}
       >
@@ -81,7 +81,7 @@ const Sidebar = ({ onClose }) => {
           </div>
           <div>
             <div className={`text-sm font-bold leading-tight ${textPrimary}`}>
-              Stud IQ
+              StudIQ
             </div>
             <div className="text-[10px] text-slate-400">PH Student App</div>
           </div>
@@ -154,6 +154,9 @@ const Sidebar = ({ onClose }) => {
       <div
         className={`px-4 py-4 border-t space-y-1 ${isDark ? "border-slate-700" : "border-slate-100"}`}
       >
+        <div className="px-3 pb-2">
+          <FlameWidget isDark={isDark} />
+        </div>
         <NavLink
           to="/"
           className={`text-[11px] block px-2 py-1 ${textMuted} hover:text-indigo-500 transition-colors`}

@@ -1,9 +1,16 @@
 import React, { useState } from "react";
 import SelectBox from "./ui/SelectBox";
-import { AMOUNTS, CATEGORIES, DIFFICULTIES, TYPES } from "../utils/constants/quiz-generator-config";
+import {
+  AMOUNTS,
+  CATEGORIES,
+  DIFFICULTIES,
+  TYPES,
+} from "../utils/constants/quiz-generator-config";
 import { ChevronRight } from "lucide-react";
+import { useTheme } from "../context/ThemeContext";
 
 const FilterScreen = ({ onStart, loading, error }) => {
+  const { isDark } = useTheme();
   const [amount, setAmount] = useState("10");
   const [category, setCategory] = useState("");
   const [difficulty, setDifficulty] = useState("");
@@ -11,19 +18,27 @@ const FilterScreen = ({ onStart, loading, error }) => {
 
   return (
     <div className="animate-[fadeSlideIn_0.3s_ease]">
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 mb-4 text-center">
-        <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4">
+      <div
+        className={`border ${isDark ? "bg-slate-800 border-slate-700" : "bg-slate-50 border-slate-100"} rounded-2xl  p-6 mb-4 text-center`}
+      >
+        <div
+          className={`w-16 h-16 ${isDark ? "bg-slate-800" : "bg-indigo-50"} rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4`}
+        >
           🧠
         </div>
-        <h2 className="text-lg font-bold text-slate-800 mb-1">
+        <h2
+          className={`text-lg font-bold ${isDark ? "text-slate-50" : "text-slate-800"} mb-1`}
+        >
           Ready to test your knowledge?
         </h2>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-slate-400">
           Customize your quiz below then hit <strong>Start Quiz</strong>!
         </p>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 mb-4 space-y-4">
+      <div
+        className={`border ${isDark ? "bg-slate-800 border-slate-700" : "bg-slate-50 border-slate-200 "} rounded-2xl  p-5 mb-4 space-y-4`}
+      >
         <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-widest">
           Quiz settings
         </h3>

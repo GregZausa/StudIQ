@@ -20,6 +20,7 @@ import { useState } from "react";
 import Button from "../components/ui/Button";
 import { useTheme } from "../context/ThemeContext";
 import ToggleButton from "../components/ui/ToggleButton";
+import StreakCard from "../components/cards/StreakCard";
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -154,6 +155,7 @@ const DashboardOverview = () => {
         >
           Quick access
         </h2>
+        <StreakCard isDark={isDark} />
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {QUICK_LINKS.map((item) => (
             <QuickCard key={item.to} {...item} isDark={isDark} />

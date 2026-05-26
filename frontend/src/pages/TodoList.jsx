@@ -28,11 +28,13 @@ import AddTodoForm from "../components/forms/AddTodoForm";
 import TodoItem from "../components/TodoItem";
 import { useTheme } from "../context/ThemeContext";
 import { decryptTodo, decryptTodoList, encryptTodoList } from "../utils/crypto";
+import { useStreakContext } from "../context/StreakContext";
 
 const TodoList = () => {
   const navigate = useNavigate();
   const { userId, session } = useUser();
   const { isDark } = useTheme();
+  const { logActivity } = useStreakContext();
 
   const [todos, setTodos] = useState([]);
   const [fetching, setFetching] = useState(true);
@@ -80,6 +82,7 @@ const TodoList = () => {
     if (!error && data) {
       const decrypted = await decryptTodoList([data], authId);
       setTodos((prev) => [decrypted[0], ...prev]);
+      await logActivity("complete_todo");
     }
     setAdding(false);
   };
@@ -97,6 +100,7 @@ const TodoList = () => {
     if (!error && data) {
       const decrypted = await decryptTodoList([data], authId);
       setTodos((prev) => prev.map((t) => (t.id === id ? decrypted[0] : t)));
+      if (!completed) await logActivity("complete_todo");
     }
   };
 

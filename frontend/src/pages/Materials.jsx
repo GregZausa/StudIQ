@@ -13,8 +13,9 @@ import Header from "../components/layout/Header";
 import SearchBar from "../components/ui/SearchBar";
 
 const Materials = () => {
-  const { userId } = useUser();
+  const { userId, session } = useUser();
   const { isDark } = useTheme();
+  const authId = session?.user?.id;
 
   const [materials, setMaterials] = useState([]);
   const [fetching, setFetching] = useState(true);
@@ -43,15 +44,22 @@ const Materials = () => {
   }, [fetchMaterials]);
 
   const handleAdd = async (fields) => {
-    if (!userId) return;
+    if (!userId || !authId) return;
     setAdding(true);
+
+    const encrypted = await encryptMaterial(fields, authId);
     const { data, error } = await supabase
       .from("materials")
-      .insert({ ...fields, user_id: userId })
+      .insert({ ...encrypted, user_id: userId })
       .select()
       .single();
 
-    if (!error && data) setMaterials((prev) => [data, ...prev]);
+    if (!error && data) {
+      const decrypted = await decryptMaterials([data], authId);
+      setMaterials((prev) => [decrypted[0], ...prev]);
+      await logActivity("add_material");
+    }
+
     setAdding(false);
   };
 

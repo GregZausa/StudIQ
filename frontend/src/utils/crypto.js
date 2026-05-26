@@ -83,6 +83,7 @@ export const decryptText = async (cipherBase64, authId) => {
   }
 };
 
+//encryptions
 export const encryptNote = async (note, authId) => {
   const [encTitle, encContent] = await Promise.all([
     encryptText(note.title, authId),
@@ -97,6 +98,8 @@ export const encryptTodoList = async (todo, authId) => {
   ]);
   return { ...todo, title: encTitle, subject: encSubject };
 };
+
+//decryptions
 
 export const decryptNote = async (note, authId) => {
   const [decTitle, decContent] = await Promise.all([

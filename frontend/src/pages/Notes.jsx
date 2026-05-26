@@ -16,10 +16,12 @@ import {
   encryptText,
   decryptText,
 } from "../utils/crypto";
+import { useStreakContext } from "../context/StreakContext";
 
 const Notes = () => {
   const { userId, session } = useUser();
   const { isDark } = useTheme();
+  const { logActivity } = useStreakContext();
 
   const [notes, setNotes] = useState([]);
   const [fetching, setFetching] = useState(true);
@@ -57,7 +59,6 @@ const Notes = () => {
     setAdding(true);
 
     const encrypted = await encryptNote(fields, authId);
-
     const { data, error } = await supabase
       .from("notes")
       .insert({ ...encrypted, user_id: userId })
@@ -67,7 +68,9 @@ const Notes = () => {
     if (!error && data) {
       const decrypted = await decryptNotes([data], authId);
       setNotes((prev) => [decrypted[0], ...prev]);
+      await logActivity("add_note");
     }
+
     setAdding(false);
   };
 

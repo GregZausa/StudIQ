@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import studIQLogo from "../../../components/res/logo.png";
+import studIQLogo from "../../../components/res/stud_iq_logo_dark_mode.png";
 
 const Footer = () => (
   <footer className="border-t border-white/10 mt-16 py-10 px-4">

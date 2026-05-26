@@ -17,7 +17,6 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 function shuffle(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -35,7 +34,6 @@ function getScoreLabel(pct) {
   return { label: "Better luck next time 💪", color: "text-red-500" };
 }
 
-// ─── Mode Picker ──────────────────────────────────────────────────────────────
 const ModePicker = ({ deck, cardCount, onPick, isDark }) => {
   const cardBase = isDark
     ? "bg-slate-800 border-slate-700"
@@ -96,7 +94,6 @@ const ModePicker = ({ deck, cardCount, onPick, isDark }) => {
   );
 };
 
-// ─── Flashcard Mode ───────────────────────────────────────────────────────────
 const FlashcardMode = ({ cards, onFinish, isDark }) => {
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
@@ -223,7 +220,7 @@ const FlashcardMode = ({ cards, onFinish, isDark }) => {
       {/* Card */}
       <div
         onClick={() => setFlipped((v) => !v)}
-        className={`rounded-2xl border p-8 mb-4 text-center cursor-pointer transition-all min-h-[200px] flex flex-col items-center justify-center gap-4 select-none ${cardBase} ${flipped ? "ring-2 ring-indigo-300 dark:ring-indigo-700" : "hover:shadow-sm"}`}
+        className={`rounded-2xl border p-8 mb-4 text-center cursor-pointer transition-all min-h-50 flex flex-col items-center justify-center gap-4 select-none ${cardBase} ${flipped ? "ring-2 ring-indigo-300 dark:ring-indigo-700" : "hover:shadow-sm"}`}
       >
         <div
           className={`text-[10px] font-semibold uppercase tracking-widest ${flipped ? "text-indigo-500" : "text-slate-400"}`}

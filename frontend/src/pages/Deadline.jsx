@@ -47,8 +47,9 @@ const ALARM_TIERS = [
 const TIER_WINDOW_MS = 30 * 1000;
 
 const Deadlines = () => {
-  const { userId } = useUser();
+  const { userId, session } = useUser();
   const { isDark } = useTheme();
+  const authId = session?.user?.id;
   const now = useNow();
 
   const [deadlines, setDeadlines] = useState([]);
@@ -138,20 +139,26 @@ const Deadlines = () => {
   }, [now, deadlines, notifGranted]);
 
   const handleAdd = async (fields) => {
-    if (!userId) return;
+    if (!userId || !authId) return;
     setAdding(true);
+
+    const encrypted = await encryptDeadline(fields, authId);
     const { data, error } = await supabase
       .from("deadlines")
-      .insert({ ...fields, user_id: userId })
+      .insert({ ...encrypted, user_id: userId })
       .select()
       .single();
 
-    if (!error && data)
+    if (!error && data) {
+      const decrypted = await decryptDeadlines([data], authId);
       setDeadlines((prev) =>
-        [...prev, data].sort(
+        [...prev, decrypted[0]].sort(
           (a, b) => new Date(a.due_date) - new Date(b.due_date),
         ),
       );
+      await logActivity("add_deadline");
+    }
+
     setAdding(false);
   };
 

@@ -25,6 +25,7 @@ import Contact from "../pages/Contact";
 import ProtectedRoute from "../components/auth/ProtectedRoute";
 import Blog from "../pages/Blog";
 import BlogPost from "../pages/BlogPost";
+import StreakPage from "../pages/StreakPage";
 
 const router = createBrowserRouter([
   { path: "/", element: <Home /> },
@@ -54,6 +55,7 @@ const router = createBrowserRouter([
 
     children: [
       { index: true, element: <DashboardOverview /> },
+      { path: "streak", element: <StreakPage /> },
       { path: "todos", element: <TodoList /> },
       { path: "deadlines", element: <Deadlines /> },
       { path: "notes", element: <Notes /> },

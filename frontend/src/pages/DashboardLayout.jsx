@@ -5,7 +5,7 @@ import { Menu, X } from "lucide-react";
 import { useUser } from "../context/UserContext";
 import InfoSetUpModal from "../components/modal/InfoSetUpModal";
 import { useTheme } from "../context/ThemeContext";
-import studIQLogo from "../components/res/logo.png";
+import studIQLogo from "../components/res/stud_iq_logo_dark_mode.png";
 
 const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);

@@ -283,12 +283,10 @@ const MyDecks = () => {
   const [filterType, setFilterType] = useState("");
   const [search, setSearch] = useState("");
 
-  // ── Fetch decks with card count ──
   const fetchDecks = useCallback(async () => {
     if (!userId) return;
     setFetching(true);
 
-    // Fetch decks
     const { data: deckData, error } = await supabase
       .from("decks")
       .select("*")
@@ -300,7 +298,6 @@ const MyDecks = () => {
       return;
     }
 
-    // Fetch card counts per deck
     const deckIds = deckData.map((d) => d.id);
     const { data: cardCounts } = await supabase
       .from("cards")
@@ -320,7 +317,6 @@ const MyDecks = () => {
     fetchDecks();
   }, [fetchDecks]);
 
-  // ── Create ──
   const handleCreate = async (fields) => {
     if (!userId) return;
     setSaving(true);
@@ -339,7 +335,6 @@ const MyDecks = () => {
     setSaving(false);
   };
 
-  // ── Update ──
   const handleUpdate = async (fields) => {
     if (!editDeck) return;
     setSaving(true);
@@ -361,14 +356,12 @@ const MyDecks = () => {
     setSaving(false);
   };
 
-  // ── Delete ──
   const handleDelete = async (id) => {
     if (!confirm("Delete this deck and all its cards?")) return;
     const { error } = await supabase.from("decks").delete().eq("id", id);
     if (!error) setDecks((prev) => prev.filter((d) => d.id !== id));
   };
 
-  // ── Study ──
   const handleStudy = (deck) => {
     if (deck.card_count === 0) {
       alert("Add some cards first before studying!");
@@ -377,7 +370,6 @@ const MyDecks = () => {
     navigate(`/dashboard/decks/${deck.id}/study`);
   };
 
-  // ── Filter ──
   const filtered = decks
     .filter((d) => !filterType || d.type === filterType)
     .filter(
@@ -391,7 +383,6 @@ const MyDecks = () => {
 
   return (
     <div className="max-w-4xl mx-auto">
-      {/* ── Header ── */}
       <div className="flex items-center justify-between mb-5">
         <div>
           <h1

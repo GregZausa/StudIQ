@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import studIQLogo from "../components/res/logo.png";
+import studIQLogo from "../components/res/stud_iq_logo_dark_mode.png";
 
 const About = () => {
   const navigate = useNavigate();

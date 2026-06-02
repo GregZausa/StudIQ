@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { signIn, signUp } from "../config/user";
+import { signIn, signOut, signUp } from "../config/user";
 import { Eye, EyeOff, ArrowRight } from "lucide-react";
 
 const AuthPage = () => {
@@ -41,7 +41,7 @@ const AuthPage = () => {
 
     setLoading(true);
     if (tab === "login") {
-      localStorage.removeItem("sb-ijuxdxwhtsygcgdeketm-auth-token");
+      await signOut();
       const { error } = await signIn(email.trim(), password);
       if (error) {
         setError(

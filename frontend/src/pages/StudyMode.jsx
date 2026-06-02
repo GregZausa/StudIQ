@@ -1,16 +1,15 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "../config/supabase";
 import { useUser } from "../context/UserContext";
 import { useTheme } from "../context/ThemeContext";
 import { useNavigate, useParams } from "react-router-dom";
+import { useStreakContext } from "../context/StreakContext";
 import AdSenseAd from "../utils/AdSenseAd";
 import {
   ArrowLeft,
   ArrowRight,
   RotateCcw,
   Trophy,
-  BookOpen,
-  Zap,
   Check,
   X,
   ChevronLeft,
@@ -126,18 +125,10 @@ const FlashcardMode = ({ cards, onFinish, isDark }) => {
     setIndex((i) => i + 1);
   };
 
-  const handleRestart = () => {
-    setIndex(0);
-    setFlipped(false);
-    setKnown(new Set());
-    setUnknown(new Set());
-  };
-
   const cardBase = isDark
     ? "bg-slate-800 border-slate-700"
     : "bg-white border-slate-200";
   const textBase = isDark ? "text-slate-100" : "text-slate-800";
-  const subText = isDark ? "text-slate-400" : "text-slate-500";
 
   if (isDone) {
     const knownCount = known.size;
@@ -175,8 +166,13 @@ const FlashcardMode = ({ cards, onFinish, isDark }) => {
 
           <div className="flex gap-2">
             <button
-              onClick={handleRestart}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-semibold cursor-pointer transition-colors dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
+              onClick={() => {
+                setIndex(0);
+                setFlipped(false);
+                setKnown(new Set());
+                setUnknown(new Set());
+              }}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-semibold cursor-pointer dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
             >
               <RotateCcw size={13} /> Restart
             </button>
@@ -190,7 +186,6 @@ const FlashcardMode = ({ cards, onFinish, isDark }) => {
             </button>
           </div>
         </div>
-
         <AdSenseAd />
       </div>
     );
@@ -198,7 +193,6 @@ const FlashcardMode = ({ cards, onFinish, isDark }) => {
 
   return (
     <div className="max-w-md mx-auto">
-      {/* Progress */}
       <div className="mb-4">
         <div className="flex justify-between text-xs text-slate-400 mb-1.5">
           <span>
@@ -217,7 +211,6 @@ const FlashcardMode = ({ cards, onFinish, isDark }) => {
         </div>
       </div>
 
-      {/* Card */}
       <div
         onClick={() => setFlipped((v) => !v)}
         className={`rounded-2xl border p-8 mb-4 text-center cursor-pointer transition-all min-h-50 flex flex-col items-center justify-center gap-4 select-none ${cardBase} ${flipped ? "ring-2 ring-indigo-300 dark:ring-indigo-700" : "hover:shadow-sm"}`}
@@ -237,18 +230,17 @@ const FlashcardMode = ({ cards, onFinish, isDark }) => {
         )}
       </div>
 
-      {/* Actions */}
       {flipped ? (
         <div className="flex gap-3">
           <button
             onClick={handleUnknown}
-            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 text-sm font-semibold cursor-pointer transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-red-50 hover:bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 text-sm font-semibold cursor-pointer transition-colors"
           >
             <X size={15} /> Still learning
           </button>
           <button
             onClick={handleKnown}
-            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 text-emerald-600 text-sm font-semibold cursor-pointer transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-emerald-600 text-sm font-semibold cursor-pointer transition-colors"
           >
             <Check size={15} /> Got it!
           </button>
@@ -286,7 +278,6 @@ const FlashcardMode = ({ cards, onFinish, isDark }) => {
   );
 };
 
-// ─── Quiz Mode ────────────────────────────────────────────────────────────────
 const QuizMode = ({ cards, onFinish, isDark }) => {
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState([]);
@@ -297,11 +288,9 @@ const QuizMode = ({ cards, onFinish, isDark }) => {
   const total = cards.length;
   const isDone = index >= total;
 
-  // Build options per card
   const getOptions = (c) => {
     if (c.type === "true_false") return ["True", "False"];
     if (c.type === "multiple_choice") return c.choices || [];
-    // Flashcard in quiz mode — just show correct answer as only option (not great for quiz)
     return [c.correct_answer];
   };
 
@@ -325,7 +314,6 @@ const QuizMode = ({ cards, onFinish, isDark }) => {
     : "bg-white border-slate-200";
   const textBase = isDark ? "text-slate-100" : "text-slate-800";
 
-  // ── Results ──
   if (isDone) {
     const correct = answers.filter(
       (a) => a.selected === a.card.correct_answer,
@@ -371,7 +359,6 @@ const QuizMode = ({ cards, onFinish, isDark }) => {
           </div>
         </div>
 
-        {/* Review */}
         <div className={`rounded-2xl border p-4 mb-4 ${cardBase}`}>
           <h3 className={`text-sm font-semibold mb-3 ${textBase}`}>
             📋 Review
@@ -417,10 +404,8 @@ const QuizMode = ({ cards, onFinish, isDark }) => {
     );
   }
 
-  // ── Question ──
   return (
     <div className="max-w-md mx-auto">
-      {/* Progress */}
       <div className="mb-4">
         <div className="flex justify-between text-xs text-slate-400 mb-1.5">
           <span>
@@ -438,7 +423,6 @@ const QuizMode = ({ cards, onFinish, isDark }) => {
         </div>
       </div>
 
-      {/* Question card */}
       <div className={`rounded-2xl border p-5 mb-4 ${cardBase}`}>
         <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-widest mb-2">
           Question {index + 1}
@@ -448,7 +432,6 @@ const QuizMode = ({ cards, onFinish, isDark }) => {
         </p>
       </div>
 
-      {/* Options */}
       <div className="space-y-2.5 mb-4">
         {options.map((opt, i) => {
           const isCorrect = opt === card.correct_answer;
@@ -502,7 +485,6 @@ const QuizMode = ({ cards, onFinish, isDark }) => {
         })}
       </div>
 
-      {/* Feedback + Next */}
       {answered && (
         <>
           <div
@@ -534,14 +516,15 @@ const StudyMode = () => {
   const { userId } = useUser();
   const { isDark } = useTheme();
   const navigate = useNavigate();
+  const { logActivity } = useStreakContext() || {};
 
   const [deck, setDeck] = useState(null);
   const [cards, setCards] = useState([]);
-  const [mode, setMode] = useState(null); // null | 'flashcard' | 'quiz'
+  const [mode, setMode] = useState(null);
   const [fetching, setFetching] = useState(true);
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchData = async () => {
       setFetching(true);
       const [deckRes, cardsRes] = await Promise.all([
         supabase.from("decks").select("*").eq("id", id).single(),
@@ -555,18 +538,20 @@ const StudyMode = () => {
       if (!cardsRes.error) setCards(shuffle(cardsRes.data || []));
       setFetching(false);
     };
-    fetch();
+    fetchData();
   }, [id]);
 
   const handleFinish = async ({ score, total, mode: studyMode }) => {
     if (userId) {
-      await supabase.from("study_sessions").insert({
+      const { error } = await supabase.from("study_sessions").insert({
         user_id: userId,
         deck_id: id,
         score,
         total,
         mode: studyMode,
       });
+      // Only award XP if the session was saved successfully
+      if (!error) logActivity?.("study_deck");
     }
     navigate(`/dashboard/decks/${id}`);
   };
@@ -585,7 +570,6 @@ const StudyMode = () => {
 
   return (
     <div className="max-w-2xl mx-auto">
-      {/* ── Top nav ── */}
       <div className="flex items-center gap-3 mb-5">
         <button
           onClick={() =>
@@ -615,11 +599,9 @@ const StudyMode = () => {
           isDark={isDark}
         />
       )}
-
       {mode === "flashcard" && (
         <FlashcardMode cards={cards} onFinish={handleFinish} isDark={isDark} />
       )}
-
       {mode === "quiz" && (
         <QuizMode cards={cards} onFinish={handleFinish} isDark={isDark} />
       )}

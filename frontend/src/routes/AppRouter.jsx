@@ -26,6 +26,7 @@ import ProtectedRoute from "../components/auth/ProtectedRoute";
 import Blog from "../pages/Blog";
 import BlogPost from "../pages/BlogPost";
 import StreakPage from "../pages/StreakPage";
+import ClassSchedule from "../pages/ClassSchedule";
 
 const router = createBrowserRouter([
   { path: "/", element: <Home /> },
@@ -67,6 +68,7 @@ const router = createBrowserRouter([
       { path: "decks/:id", element: <DeckEditor /> },
       { path: "decks/:id/study", element: <StudyMode /> },
       { path: "explore", element: <ExplorePage /> },
+      { path: "schedule", element: <ClassSchedule /> },
     ],
   },
   { path: "*", element: <Navigate to="/" replace /> },

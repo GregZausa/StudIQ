@@ -99,6 +99,15 @@ export const encryptTodoList = async (todo, authId) => {
   return { ...todo, title: encTitle, subject: encSubject };
 };
 
+export const encryptMaterial = async (material, authId) => {
+  const [encTitle, encURL, encSubject] = await Promise.all([
+    encryptText(material.title, authId),
+    encryptText(material.url, authId),
+    encryptText(material.subject, authId),
+  ]);
+  return { ...material, title: encTitle, url: encURL, subject: encSubject };
+};
+
 //decryptions
 
 export const decryptNote = async (note, authId) => {
@@ -117,10 +126,23 @@ export const decryptTodo = async (todo, authId) => {
   return { ...todo, title: decTitle, subject: decSubject };
 };
 
+export const decryptMaterial = async (material, authId) => {
+  const [decTitle, decURL, decSubject] = await Promise.all([
+    decryptText(material.title, authId),
+    decryptText(material.url, authId),
+    decryptText(material.subject, authId),
+  ]);
+  return { ...material, title: decTitle, url: decURL, subject: decSubject };
+};
+
 export const decryptNotes = async (notes, authId) => {
   return Promise.all(notes.map((n) => decryptNote(n, authId)));
 };
 
 export const decryptTodoList = async (todo, authId) => {
   return Promise.all(todo.map((t) => decryptTodo(t, authId)));
+};
+
+export const decryptMaterials = async (material, authId) => {
+  return Promise.all(material.map((m) => decryptMaterial(m, authId)));
 };

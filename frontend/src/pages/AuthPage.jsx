@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { signIn, signUp } from "../config/user";
-import { Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, ArrowRight } from "lucide-react";
 
 const AuthPage = () => {
   const navigate = useNavigate();
@@ -22,7 +22,6 @@ const AuthPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     reset();
-
     if (!email.trim() || !password.trim()) {
       setError("Please fill in all fields.");
       return;
@@ -35,28 +34,23 @@ const AuthPage = () => {
       setError("Password must be at least 6 characters.");
       return;
     }
-
-    if (tab === "signup") {
-      if (password !== confirm) {
-        setError("Passwords do not match.");
-        return;
-      }
+    if (tab === "signup" && password !== confirm) {
+      setError("Passwords do not match.");
+      return;
     }
 
     setLoading(true);
-
     if (tab === "login") {
       const { error } = await signIn(email.trim(), password);
       if (error) {
         setError(
           error.message === "Invalid login credentials"
-            ? "Wrong email or password. Please try again."
+            ? "Wrong email or password. Try again."
             : error.message,
         );
         setLoading(false);
         return;
       }
-      // UserContext onAuthStateChange will handle the rest
       navigate("/dashboard");
     } else {
       const { error } = await signUp(email.trim(), password);
@@ -70,187 +64,264 @@ const AuthPage = () => {
       setPassword("");
       setConfirm("");
     }
-
     setLoading(false);
   };
 
-  const inputClass = `
-    w-full pl-10 pr-4 py-3 rounded-xl border border-white/10
-    bg-white/5 text-white placeholder:text-slate-500
-    outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20
-    transition-all text-sm
-  `;
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      setError("Enter your email first.");
+      return;
+    }
+    reset();
+    const { supabase } = await import("../config/supabase");
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) setError(error.message);
+    else setSuccess("Reset link sent! Check your inbox.");
+  };
+
+  const inputCls =
+    "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 outline-none focus:border-indigo-500/60 focus:bg-indigo-500/5 focus:ring-2 focus:ring-indigo-500/10 transition-all font-[Cabinet_Grotesk]";
+
+  const FEATURES = [
+    "GPA calculator for PH grading system",
+    "Pomodoro timer with ambient sounds",
+    "Flashcard maker with public sharing",
+    "Deadline alerts at 24h, 3h, and 1h",
+    "Study streak tracker with XP levels",
+    "Class schedule builder",
+  ];
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-950 via-black to-slate-900 flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        {/* Brand */}
-        <div className="text-center mb-8">
-          <div className="w-14 h-14 bg-indigo-500 rounded-2xl flex items-center justify-center text-white font-bold text-xl mx-auto mb-3">
-            S
+    <>
+      <style>{`
+        @import url('https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&f[]=cabinet-grotesk@400,500,700,800&display=swap');
+        .font-clash    { font-family: 'Clash Display', sans-serif; }
+        .font-cabinet  { font-family: 'Cabinet Grotesk', sans-serif; }
+
+        /* noise grain overlay */
+        .auth-grain::before {
+          content: '';
+          position: fixed;
+          inset: 0;
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+          opacity: 0.03;
+          pointer-events: none;
+          z-index: 0;
+        }
+
+        @keyframes auth-spin { to { transform: rotate(360deg); } }
+        .auth-spinner { animation: auth-spin 0.7s linear infinite; }
+
+        /* ghost text stroke */
+        .stroke-ghost {
+          color: transparent;
+          -webkit-text-stroke: 1px rgba(255,255,255,0.12);
+        }
+      `}</style>
+
+      <div className="auth-grain min-h-screen bg-[#080808] flex font-cabinet relative overflow-hidden">
+        {/* ── Atmospheric glows ── */}
+        <div className="pointer-events-none fixed -top-1/4 -left-1/4 w-[60vw] h-[60vw] rounded-full bg-indigo-500/10 blur-[100px]" />
+        <div className="pointer-events-none fixed -bottom-1/4 -right-1/4 w-[40vw] h-[40vw] rounded-full bg-violet-500/8 blur-[80px]" />
+
+        {/* ── Left brand panel — desktop only ── */}
+        <div className="hidden lg:flex flex-col justify-between w-[420px] shrink-0 px-14 py-14 border-r border-white/5 relative z-10">
+          {/* Logo */}
+          <div className="font-clash font-bold text-2xl tracking-tight text-white">
+            Stud<span className="text-indigo-400">IQ</span>
           </div>
-          <h1 className="text-2xl font-bold text-white">Stud IQ</h1>
-          <p className="text-slate-400 text-sm mt-1">
-            Study smarter, not harder 📚
+
+          {/* Tagline */}
+          <div>
+            <h2 className="font-clash font-bold text-[42px] leading-[1.05] tracking-[-2px] text-white mb-4">
+              Study smarter.
+              <br />
+              <span className="stroke-ghost">Not harder.</span>
+            </h2>
+            <p className="text-sm text-white/30 leading-relaxed">
+              Built for Filipino students who want results, not just effort.
+            </p>
+          </div>
+
+          {/* Features list */}
+          <ul className="space-y-3">
+            {FEATURES.map((f) => (
+              <li
+                key={f}
+                className="flex items-center gap-3 text-xs text-white/35"
+              >
+                <span className="w-4 h-px bg-indigo-500 shrink-0" />
+                {f}
+              </li>
+            ))}
+          </ul>
+
+          <p className="text-[11px] text-white/15">
+            © {new Date().getFullYear()} Stud IQ · Free for all students
           </p>
         </div>
 
-        {/* Card */}
-        <div className="bg-white/5 border border-white/10 rounded-3xl p-7">
-          {/* Tabs */}
-          <div className="flex gap-1 bg-white/5 rounded-xl p-1 mb-6">
-            {["login", "signup"].map((t) => (
-              <button
-                key={t}
-                onClick={() => {
-                  setTab(t);
-                  reset();
-                }}
-                className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer capitalize ${
-                  tab === t
-                    ? "bg-indigo-500 text-white shadow-sm"
-                    : "text-slate-400 hover:text-slate-200"
-                }`}
-              >
-                {t === "login" ? "Log in" : "Sign up"}
-              </button>
-            ))}
-          </div>
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-3">
-            {/* Email */}
-            <div className="relative">
-              <Mail
-                size={15}
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500"
-              />
-              <input
-                type="email"
-                placeholder="Email address"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  reset();
-                }}
-                className={inputClass}
-                autoComplete="email"
-              />
+        {/* ── Right form panel ── */}
+        <div className="flex-1 flex items-center justify-center px-6 py-12 relative z-10">
+          <div className="w-full max-w-[380px]">
+            {/* Mobile logo */}
+            <div className="lg:hidden text-center mb-10">
+              <div className="font-clash font-bold text-2xl tracking-tight text-white">
+                Stud<span className="text-indigo-400">IQ</span>
+              </div>
+              <p className="text-xs text-white/30 mt-1">
+                Study smarter, not harder 📚
+              </p>
             </div>
 
-            {/* Password */}
-            <div className="relative">
-              <Lock
-                size={15}
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500"
-              />
-              <input
-                type={showPw ? "text" : "password"}
-                placeholder="Password"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  reset();
-                }}
-                className={inputClass + " pr-10"}
-                autoComplete={
-                  tab === "login" ? "current-password" : "new-password"
-                }
-              />
-              <button
-                type="button"
-                onClick={() => setShowPw((v) => !v)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 cursor-pointer"
-              >
-                {showPw ? <EyeOff size={14} /> : <Eye size={14} />}
-              </button>
-            </div>
-
-            {/* Confirm password — signup only */}
-            {tab === "signup" && (
-              <div className="relative">
-                <Lock
-                  size={15}
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500"
-                />
-                <input
-                  type={showPw ? "text" : "password"}
-                  placeholder="Confirm password"
-                  value={confirm}
-                  onChange={(e) => {
-                    setConfirm(e.target.value);
+            {/* Tab switcher */}
+            <div className="flex gap-1 bg-white/3 border border-white/8 rounded-xl p-1 mb-8">
+              {["login", "signup"].map((t) => (
+                <button
+                  key={t}
+                  onClick={() => {
+                    setTab(t);
                     reset();
                   }}
-                  className={inputClass}
-                  autoComplete="new-password"
+                  className={`flex-1 py-2 rounded-lg font-clash font-semibold text-[13px] tracking-tight cursor-pointer transition-all ${
+                    tab === t
+                      ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/30"
+                      : "text-white/30 hover:text-white/60"
+                  }`}
+                >
+                  {t === "login" ? "Log in" : "Sign up"}
+                </button>
+              ))}
+            </div>
+
+            {/* Heading */}
+            <h1 className="font-clash font-bold text-3xl tracking-[-1px] text-white mb-1.5">
+              {tab === "login" ? "Welcome back." : "Create account."}
+            </h1>
+            <p className="text-[13px] text-white/30 mb-7">
+              {tab === "login"
+                ? "Log in to your Stud IQ account to continue."
+                : "Join thousands of Filipino students studying smarter."}
+            </p>
+
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div>
+                <label className="block text-[10px] font-bold tracking-[1.5px] uppercase text-white/25 mb-1.5">
+                  Email address
+                </label>
+                <input
+                  type="email"
+                  placeholder="you@email.com"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    reset();
+                  }}
+                  className={inputCls}
+                  autoComplete="email"
                 />
               </div>
-            )}
 
-            {/* Error / Success */}
-            {error && (
-              <p className="text-red-400 text-xs pl-1 animate-pulse">{error}</p>
-            )}
-            {success && (
-              <p className="text-emerald-400 text-xs pl-1">{success}</p>
-            )}
+              <div>
+                <label className="block text-[10px] font-bold tracking-[1.5px] uppercase text-white/25 mb-1.5">
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPw ? "text" : "password"}
+                    placeholder={
+                      tab === "login" ? "Your password" : "Min. 6 characters"
+                    }
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      reset();
+                    }}
+                    className={inputCls + " pr-10"}
+                    autoComplete={
+                      tab === "login" ? "current-password" : "new-password"
+                    }
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPw((v) => !v)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/60 cursor-pointer transition-colors"
+                  >
+                    {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
+              </div>
 
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white font-semibold text-sm transition-colors cursor-pointer mt-1"
-            >
-              {loading ? (
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <>
-                  {tab === "login" ? "Log in" : "Create account"}
-                  <ArrowRight size={15} />
-                </>
+              {tab === "signup" && (
+                <div>
+                  <label className="block text-[10px] font-bold tracking-[1.5px] uppercase text-white/25 mb-1.5">
+                    Confirm password
+                  </label>
+                  <input
+                    type={showPw ? "text" : "password"}
+                    placeholder="Repeat your password"
+                    value={confirm}
+                    onChange={(e) => {
+                      setConfirm(e.target.value);
+                      reset();
+                    }}
+                    className={inputCls}
+                    autoComplete="new-password"
+                  />
+                </div>
               )}
-            </button>
-          </form>
 
-          {/* Forgot password hint */}
-          {tab === "login" && (
-            <p className="text-center text-xs text-slate-500 mt-4">
-              Forgot your password?{" "}
+              {error && <p className="text-xs text-red-400 pl-0.5">{error}</p>}
+              {success && (
+                <p className="text-xs text-emerald-400 pl-0.5">{success}</p>
+              )}
+
               <button
-                onClick={async () => {
-                  if (!email.trim()) {
-                    setError("Enter your email first.");
-                    return;
-                  }
-                  reset();
-                  const { error } = await import("../config/supabase").then(
-                    ({ supabase }) =>
-                      supabase.auth.resetPasswordForEmail(email.trim(), {
-                        redirectTo: `${window.location.origin}/reset-password`,
-                      }),
-                  );
-                  if (error) setError(error.message);
-                  else
-                    setSuccess("Password reset email sent! Check your inbox.");
-                }}
-                className="text-indigo-400 hover:text-indigo-300 cursor-pointer underline"
+                type="submit"
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 text-white font-clash font-bold text-sm tracking-tight cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-indigo-500/30 mt-2"
               >
-                Reset it
+                {loading ? (
+                  <span className="auth-spinner w-4 h-4 border-2 border-white/25 border-t-white rounded-full" />
+                ) : (
+                  <>
+                    {tab === "login" ? "Log in" : "Create account"}{" "}
+                    <ArrowRight size={15} />
+                  </>
+                )}
               </button>
-            </p>
-          )}
-        </div>
+            </form>
 
-        <p className="text-center text-xs text-slate-500 mt-6">
-          <button
-            onClick={() => navigate("/")}
-            className="hover:text-slate-300 cursor-pointer transition-colors"
-          >
-            ← Back to Home
-          </button>
-        </p>
+            {/* Divider */}
+            <div className="h-px bg-white/6 my-6" />
+
+            {/* Footer */}
+            <div className="text-center space-y-2">
+              {tab === "login" && (
+                <p className="text-xs text-white/25">
+                  Forgot your password?{" "}
+                  <button
+                    onClick={handleForgotPassword}
+                    className="text-indigo-400 hover:text-indigo-300 cursor-pointer underline underline-offset-2 transition-colors"
+                  >
+                    Reset it
+                  </button>
+                </p>
+              )}
+              <button
+                onClick={() => navigate("/")}
+                className="text-xs text-white/25 hover:text-white/50 cursor-pointer transition-colors underline underline-offset-2"
+              >
+                ← Back to Home
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

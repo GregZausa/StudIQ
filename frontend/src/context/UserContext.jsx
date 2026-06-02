@@ -26,9 +26,7 @@ export const UserProvider = ({ children }) => {
 
   const loadUserRow = useCallback(async (authId) => {
     try {
-      console.log("loadUserRow called with:", authId);
       let row = await getUserByAuthId(authId);
-      console.log("getUserByAuthId result:", row);
       if (!row) {
         console.log("No row found, creating...");
         row = await createUserRow(authId);

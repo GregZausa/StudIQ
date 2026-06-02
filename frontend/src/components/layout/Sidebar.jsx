@@ -16,6 +16,7 @@ import {
   Globe,
   ChevronRight,
   LogOut,
+  CalendarDays,
 } from "lucide-react";
 import FlameWidget from "../widgets/FlameWidget";
 
@@ -34,6 +35,7 @@ const NAV_ITEMS = [
       { to: "/dashboard/notes", icon: StickyNote, label: "Notes" },
       { to: "/dashboard/materials", icon: BookOpen, label: "Materials" },
       { to: "/dashboard/decks", icon: BrainCircuit, label: "My Decks" },
+      { to: "/dashboard/schedule", icon: CalendarDays, label: "Schedule" },
     ],
   },
   {

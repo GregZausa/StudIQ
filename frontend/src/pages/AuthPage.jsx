@@ -41,6 +41,7 @@ const AuthPage = () => {
 
     setLoading(true);
     if (tab === "login") {
+      localStorage.removeItem("sb-ijuxdxwhtsygcgdeketm-auth-token");
       const { error } = await signIn(email.trim(), password);
       if (error) {
         setError(

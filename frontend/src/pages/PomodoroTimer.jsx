@@ -1,303 +1,61 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState } from "react";
 import AdSenseAd from "../utils/AdSenseAd";
 import SelectBox from "../components/ui/SelectBox";
 import FloatingLabelInput from "../components/ui/FloatingLabelInput";
 import Header from "../components/layout/Header";
 import { Lightbulb, RotateCcw, SkipForward, Timer } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import {
   AMBIENT_SOUNDS,
   MODES,
   SUBJECT_OPTIONS,
 } from "../utils/constants/pomodoro-config";
 import CircularTimer from "../components/CircularTimer";
-import {
-  createAmbientEngine,
-  fmt,
-  formatDuration,
-} from "../utils/functions/pomodoro";
+import { formatDuration } from "../utils/functions/pomodoro";
 import SessionItem from "../components/SessionItem";
 import Button from "../components/ui/Button";
 import TipBox from "../components/TipBox";
 import { useTheme } from "../context/ThemeContext";
-
-function playAlarm(audioCtx, type = "focus") {
-  if (!audioCtx) return;
-  const now = audioCtx.currentTime;
-  const master = audioCtx.createGain();
-  master.gain.value = 0.5;
-  master.connect(audioCtx.destination);
-
-  const configs = {
-    focus: [
-      { freq: 523.25, start: 0, dur: 0.15 },
-      { freq: 659.25, start: 0.18, dur: 0.15 },
-      { freq: 783.99, start: 0.36, dur: 0.25 },
-      { freq: 1046.5, start: 0.64, dur: 0.4 },
-    ],
-    shortBreak: [
-      { freq: 880, start: 0, dur: 0.2 },
-      { freq: 1108, start: 0.3, dur: 0.3 },
-    ],
-    longBreak: [
-      { freq: 698.46, start: 0, dur: 0.2 },
-      { freq: 783.99, start: 0.25, dur: 0.2 },
-      { freq: 880, start: 0.5, dur: 0.35 },
-    ],
-  };
-
-  (configs[type] || configs.focus).forEach(({ freq, start, dur }) => {
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = "sine";
-    osc.frequency.value = freq;
-    gain.gain.setValueAtTime(0, now + start);
-    gain.gain.linearRampToValueAtTime(0.6, now + start + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + start + dur);
-    osc.connect(gain);
-    gain.connect(master);
-    osc.start(now + start);
-    osc.stop(now + start + dur + 0.05);
-  });
-}
+import { usePomodoroContext } from "../context/PomodoroContext";
 
 const PomodoroTimer = () => {
-  const navigate = useNavigate();
   const { isDark } = useTheme();
 
-  const [mode, setMode] = useState("focus");
-  const [durations, setDurations] = useState({
-    focus: 25,
-    shortBreak: 5,
-    longBreak: 15,
-  });
-  const [timeLeft, setTimeLeft] = useState(25 * 60);
-  const [isRunning, setIsRunning] = useState(false);
-  const [pomodoroCount, setPomodoroCount] = useState(0);
-  const [cycleCount, setCycleCount] = useState(0);
-
-  const [subject, setSubject] = useState("");
-  const [customSubject, setCustomSubject] = useState("");
-  const [sessions, setSessions] = useState([]);
-
-  const [ambientSound, setAmbientSound] = useState("none");
-  const [volume, setVolume] = useState(0.3);
+  const {
+    mode,
+    durations,
+    timeLeft,
+    isRunning,
+    pomodoroCount,
+    cycleCount,
+    subject,
+    setSubject,
+    customSubject,
+    setCustomSubject,
+    sessions,
+    setSessions,
+    ambientSound,
+    setAmbientSound,
+    volume,
+    setVolume,
+    progress,
+    totalFocusToday,
+    totalSessions,
+    activeSubject,
+    handleStart,
+    handleReset,
+    handleModeSwitch,
+    handleSkip,
+    applySettings,
+    initAudio,
+  } = usePomodoroContext();
 
   const [showSettings, setShowSettings] = useState(false);
-  const [tempDurations, setTempDurations] = useState({
-    focus: 25,
-    shortBreak: 5,
-    longBreak: 15,
-  });
+  const [tempDurations, setTempDurations] = useState(durations);
 
-  const audioCtxRef = useRef(null);
-  const ambientRef = useRef(null);
-  const intervalRef = useRef(null);
-  const completingRef = useRef(false);
-
-  const modeRef = useRef(mode);
-  const durationsRef = useRef(durations);
-  const subjectRef = useRef(subject);
-  const customSubjRef = useRef(customSubject);
-  const cycleCountRef = useRef(cycleCount);
-  const pomodoroRef = useRef(pomodoroCount);
-
-  useEffect(() => {
-    modeRef.current = mode;
-  }, [mode]);
-  useEffect(() => {
-    durationsRef.current = durations;
-  }, [durations]);
-  useEffect(() => {
-    subjectRef.current = subject;
-  }, [subject]);
-  useEffect(() => {
-    customSubjRef.current = customSubject;
-  }, [customSubject]);
-  useEffect(() => {
-    cycleCountRef.current = cycleCount;
-  }, [cycleCount]);
-  useEffect(() => {
-    pomodoroRef.current = pomodoroCount;
-  }, [pomodoroCount]);
-
-  const totalFocusToday = sessions
-    .filter((s) => s.mode === "focus" && s.completed)
-    .reduce((acc, s) => acc + s.duration, 0);
-  const totalSessions = sessions.filter(
-    (s) => s.mode === "focus" && s.completed,
-  ).length;
-
-  const initAudio = useCallback(() => {
-    if (!audioCtxRef.current) {
-      audioCtxRef.current = new (
-        window.AudioContext || window.webkitAudioContext
-      )();
-      ambientRef.current = createAmbientEngine(audioCtxRef.current);
-    }
-    if (audioCtxRef.current.state === "suspended") audioCtxRef.current.resume();
-  }, []);
-
-  useEffect(() => {
-    if (!ambientRef.current) return;
-    ambientRef.current.play(ambientSound, volume);
-  }, [ambientSound, volume]);
-
-  const handleSessionComplete = useCallback(
-    (completedMode, logSession = true) => {
-      const durs = durationsRef.current;
-
-      const subj =
-        subjectRef.current === "Other"
-          ? customSubjRef.current
-          : subjectRef.current;
-
-      let cycle = cycleCountRef.current;
-
-      if (logSession) {
-        setSessions((prev) => [
-          {
-            id: crypto.randomUUID(),
-            mode: completedMode,
-            subject: subj,
-            duration: durs[completedMode] * 60,
-            completedAt: Date.now(),
-            completed: true,
-          },
-          ...prev,
-        ]);
-      }
-
-      playAlarm(audioCtxRef.current, completedMode);
-
-      let nextMode;
-      let nextCycle = cycle;
-
-      if (completedMode === "focus") {
-        nextCycle = cycle + 1;
-
-        setPomodoroCount((c) => c + 1);
-
-        if (nextCycle >= 4) {
-          nextMode = "longBreak";
-          nextCycle = 0;
-        } else {
-          nextMode = "shortBreak";
-        }
-
-        setCycleCount(nextCycle);
-      } else if (completedMode === "shortBreak") {
-        nextMode = "focus";
-      } else if (completedMode === "longBreak") {
-        setCycleCount(0);
-        setMode("focus");
-        setTimeLeft(durs.focus * 60);
-        setIsRunning(false);
-        return;
-      }
-
-      setMode(nextMode);
-      setTimeLeft(durs[nextMode] * 60);
-      setIsRunning(false);
-      setTimeout(() => setIsRunning(true), 0);
-
-      if (Notification.permission === "granted") {
-        new Notification(
-          completedMode === "focus"
-            ? "Focus session done! 🎉"
-            : "Break over! 💪",
-        );
-      }
-    },
-    [],
-  );
-
-  useEffect(() => {
-    if (!isRunning) {
-      clearInterval(intervalRef.current);
-      return;
-    }
-
-    completingRef.current = false;
-
-    intervalRef.current = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev > 1) return prev - 1;
-
-        if (completingRef.current) return 0;
-        completingRef.current = true;
-
-        clearInterval(intervalRef.current);
-
-        setTimeout(() => {
-          handleSessionComplete(modeRef.current, true);
-        }, 0);
-
-        return 0;
-      });
-    }, 1000);
-
-    return () => clearInterval(intervalRef.current);
-  }, [isRunning, handleSessionComplete]);
-
-  useEffect(() => {
-    document.title = isRunning
-      ? `${fmt(timeLeft)} — ${MODES[mode].label} | Pomodoro`
-      : "Pomodoro Timer | PH Study Tools";
-  }, [timeLeft, isRunning, mode]);
-
-  const handleStart = () => {
-    initAudio();
-    setIsRunning((v) => !v);
-    if (Notification.permission === "default") Notification.requestPermission();
-  };
-
-  const handleReset = () => {
-    setIsRunning(false);
-    completingRef.current = false;
-    setTimeLeft(durations[mode] * 60);
-  };
-
-  const handleModeSwitch = (newMode) => {
-    setIsRunning(false);
-    completingRef.current = false;
-    setMode(newMode);
-    setTimeLeft(durations[newMode] * 60);
-  };
-
-  const handleSkip = () => {
-    clearInterval(intervalRef.current);
-    completingRef.current = true;
-
-    if (isRunning) {
-      const subj = subject === "Other" ? customSubject : subject;
-      setSessions((prev) => [
-        {
-          id: crypto.randomUUID(),
-          mode,
-          subject: subj,
-          duration: durations[mode] * 60 - timeLeft,
-          completedAt: Date.now(),
-          completed: false,
-        },
-        ...prev,
-      ]);
-    }
-    setIsRunning(false);
-    setTimeout(() => {
-      handleSessionComplete(mode, false);
-    }, 0);
-  };
-
-  const applySettings = () => {
-    setDurations(tempDurations);
-    setTimeLeft(tempDurations[mode] * 60);
-    setIsRunning(false);
+  const handleApply = () => {
+    applySettings(tempDurations);
     setShowSettings(false);
   };
-
-  const progress = 1 - timeLeft / (durations[mode] * 60);
-  const activeSubject = subject === "Other" ? customSubject : subject;
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -306,7 +64,6 @@ const PomodoroTimer = () => {
         header="Pomodoro Timer"
         subHeader="Focus. Break. Repeat. — Para sa mga estudyante 🇵🇭"
         icon={<Timer size={20} className="text-purple-500" />}
-        onClick={() => navigate("/")}
       />
 
       <div className="max-w-2xl mx-auto px-4 pb-16">
@@ -332,9 +89,11 @@ const PomodoroTimer = () => {
           ))}
         </div>
 
+        {/* ── Timer card ── */}
         <div
           className={`${isDark ? "bg-slate-800" : "bg-slate-50"} rounded-2xl border ${MODES[mode].border} p-6 mb-4 flex flex-col items-center gap-5`}
         >
+          {/* Cycle dots */}
           <div className="flex gap-1.5">
             {[...Array(4)].map((_, i) => (
               <div
@@ -355,7 +114,7 @@ const PomodoroTimer = () => {
 
           {activeSubject && (
             <div
-              className={`flex items-center gap-2 border ${isDark ? "bg-slate-800 border-slate-700" : "bg-slate-50 border-slate-100"}  rounded-xl px-3 py-1.5`}
+              className={`flex items-center gap-2 border ${isDark ? "bg-slate-800 border-slate-700" : "bg-slate-50 border-slate-100"} rounded-xl px-3 py-1.5`}
             >
               <span className="text-xs text-slate-500">Studying:</span>
               <span
@@ -388,8 +147,9 @@ const PomodoroTimer = () => {
           </div>
         </div>
 
+        {/* ── Session setup ── */}
         <div
-          className={`border ${isDark ? "bg-slate-800 border-slate-700" : "bg-slate-50 border-slate-100"} rounded-2xl  p-4 mb-4`}
+          className={`border ${isDark ? "bg-slate-800 border-slate-700" : "bg-slate-50 border-slate-100"} rounded-2xl p-4 mb-4`}
         >
           <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">
             Session setup
@@ -430,7 +190,7 @@ const PomodoroTimer = () => {
                 type="text"
                 label="Custom subject name"
                 value={customSubject}
-                onChange={(val) => setCustomSubject(val)}
+                onChange={setCustomSubject}
               />
             </div>
           )}
@@ -459,6 +219,7 @@ const PomodoroTimer = () => {
           )}
         </div>
 
+        {/* ── Stats ── */}
         <div className="grid grid-cols-3 gap-2.5 mb-4">
           {[
             {
@@ -480,7 +241,7 @@ const PomodoroTimer = () => {
           ].map(({ label, value, color }) => (
             <div
               key={label}
-              className={`border ${isDark ? "bg-slate-800 border-slate-700" : "bg-slate-50 border-slate-100"} rounded-2xl p-3.5  text-center`}
+              className={`border ${isDark ? "bg-slate-800 border-slate-700" : "bg-slate-50 border-slate-100"} rounded-2xl p-3.5 text-center`}
             >
               <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-widest mb-1.5">
                 {label}
@@ -492,15 +253,16 @@ const PomodoroTimer = () => {
           ))}
         </div>
 
+        {/* ── Custom durations ── */}
         <div
-          className={`border ${isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-100"} rounded-2xl  mb-4 overflow-hidden`}
+          className={`border ${isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-100"} rounded-2xl mb-4 overflow-hidden`}
         >
           <button
             onClick={() => {
               setTempDurations(durations);
               setShowSettings((v) => !v);
             }}
-            className={`w-full flex items-center justify-between px-4 py-3.5 text-sm font-semibold ${isDark ? "text-slate-100 hover-bg-slate-700" : "text-slate-700 hover:bg-slate-100"}  transition-colors cursor-pointer`}
+            className={`w-full flex items-center justify-between px-4 py-3.5 text-sm font-semibold ${isDark ? "text-slate-100 hover:bg-slate-700" : "text-slate-700 hover:bg-slate-100"} transition-colors cursor-pointer`}
           >
             <span className="flex items-center gap-2">
               ⚙️ Custom timer durations
@@ -540,7 +302,7 @@ const PomodoroTimer = () => {
                 ))}
               </div>
               <button
-                onClick={applySettings}
+                onClick={handleApply}
                 className="mt-3 w-full py-2.5 rounded-xl bg-indigo-500 text-white text-sm font-semibold hover:bg-indigo-600 transition-colors cursor-pointer"
               >
                 Apply settings
@@ -551,12 +313,13 @@ const PomodoroTimer = () => {
 
         <AdSenseAd />
 
+        {/* ── Session log ── */}
         <div
-          className={`border ${isDark ? "bg-slate-800 border-slate-700" : "bg-slate-50 border-slate-100"} rounded-2xl  p-4 mb-40`}
+          className={`border ${isDark ? "bg-slate-800 border-slate-700" : "bg-slate-50 border-slate-100"} rounded-2xl p-4 mb-4`}
         >
           <div className="flex items-center justify-between mb-3">
             <h3
-              className={`text-sm font-semibold  ${isDark ? "text-slate-50" : "text-slate-800"}`}
+              className={`text-sm font-semibold ${isDark ? "text-slate-50" : "text-slate-800"}`}
             >
               📋 Session log
             </h3>

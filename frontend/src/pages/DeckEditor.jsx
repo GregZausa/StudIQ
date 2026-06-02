@@ -3,12 +3,12 @@ import { supabase } from "../config/supabase";
 import { useUser } from "../context/UserContext";
 import { useTheme } from "../context/ThemeContext";
 import { useNavigate, useParams } from "react-router-dom";
+import { useStreakContext } from "../context/StreakContext";
 import AdSenseAd from "../utils/AdSenseAd";
 import SelectBox from "../components/ui/SelectBox";
 import FloatingLabelInput from "../components/ui/FloatingLabelInput";
 import {
   CARD_TYPES,
-  DECK_TYPES,
   VISIBILITY_OPTIONS,
   TYPE_BADGE,
   VISIBILITY_BADGE,
@@ -27,6 +27,7 @@ import {
   Inbox,
 } from "lucide-react";
 
+// ─── CardForm ─────────────────────────────────────────────────────────────────
 const CardForm = ({ onAdd, loading, isDark }) => {
   const [question, setQuestion] = useState("");
   const [type, setType] = useState("flashcard");
@@ -37,9 +38,8 @@ const CardForm = ({ onAdd, loading, isDark }) => {
   const [error, setError] = useState("");
   const [open, setOpen] = useState(true);
 
-  const handleChoiceChange = (i, val) => {
+  const handleChoiceChange = (i, val) =>
     setChoices((prev) => prev.map((c, idx) => (idx === i ? val : c)));
-  };
 
   const handleSubmit = () => {
     if (!question.trim()) {
@@ -91,7 +91,6 @@ const CardForm = ({ onAdd, loading, isDark }) => {
   const inputBase = isDark
     ? "bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500"
     : "bg-white border-slate-200 text-slate-800 placeholder:text-slate-400";
-
   const cardBase = isDark
     ? "bg-slate-800 border-slate-700"
     : "bg-white border-slate-200";
@@ -188,7 +187,6 @@ const CardForm = ({ onAdd, loading, isDark }) => {
             </div>
           )}
 
-          {/* True / False */}
           {type === "true_false" && (
             <div>
               <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-1.5">
@@ -231,28 +229,23 @@ const CardForm = ({ onAdd, loading, isDark }) => {
   );
 };
 
+// ─── CardItem ─────────────────────────────────────────────────────────────────
 const CardItem = ({ card, index, onDelete, isDark }) => {
   const [expanded, setExpanded] = useState(false);
-  const typeLabel =
-    CARD_TYPES.find((t) => t.value === card.type)?.label || card.type;
 
   return (
     <div
-      className={`rounded-2xl border mb-2 last:mb-0 overflow-hidden transition-all ${isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200"}`}
+      className={`rounded-2xl border mb-2 last:mb-0 overflow-hidden ${isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200"}`}
     >
       <div className="flex items-center gap-3 px-4 py-3">
-        {/* Index */}
         <div className="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-600 text-[10px] font-bold flex items-center justify-center shrink-0">
           {index + 1}
         </div>
-
-        {/* Question preview */}
         <p
           className={`flex-1 text-sm font-medium truncate ${isDark ? "text-slate-200" : "text-slate-700"}`}
         >
           {card.question}
         </p>
-
         <div className="flex items-center gap-1 shrink-0">
           <span
             className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md border hidden sm:inline ${
@@ -284,7 +277,6 @@ const CardItem = ({ card, index, onDelete, isDark }) => {
         </div>
       </div>
 
-      {/* Expanded view */}
       {expanded && (
         <div
           className={`px-4 pb-3 border-t pt-3 space-y-2 ${isDark ? "border-slate-700" : "border-slate-100"}`}
@@ -340,6 +332,7 @@ const CardItem = ({ card, index, onDelete, isDark }) => {
   );
 };
 
+// ─── DeckSettings ─────────────────────────────────────────────────────────────
 const DeckSettings = ({ deck, onSave, isDark }) => {
   const [title, setTitle] = useState(deck.title);
   const [description, setDescription] = useState(deck.description || "");
@@ -447,11 +440,13 @@ const DeckSettings = ({ deck, onSave, isDark }) => {
   );
 };
 
+// ─── Main DeckEditor ──────────────────────────────────────────────────────────
 const DeckEditor = () => {
   const { id } = useParams();
   const { userId } = useUser();
   const { isDark } = useTheme();
   const navigate = useNavigate();
+  const { logActivity } = useStreakContext() || {};
 
   const [deck, setDeck] = useState(null);
   const [cards, setCards] = useState([]);
@@ -461,7 +456,6 @@ const DeckEditor = () => {
   const fetchDeck = useCallback(async () => {
     if (!id) return;
     setFetching(true);
-
     const [deckRes, cardsRes] = await Promise.all([
       supabase.from("decks").select("*").eq("id", id).single(),
       supabase
@@ -470,7 +464,6 @@ const DeckEditor = () => {
         .eq("deck_id", id)
         .order("card_order", { ascending: true }),
     ]);
-
     if (!deckRes.error) setDeck(deckRes.data);
     if (!cardsRes.error) setCards(cardsRes.data || []);
     setFetching(false);
@@ -480,6 +473,7 @@ const DeckEditor = () => {
     fetchDeck();
   }, [fetchDeck]);
 
+  // ── Add card — logActivity only on success ──
   const handleAddCard = async (fields) => {
     setAdding(true);
     const { data, error } = await supabase
@@ -488,15 +482,13 @@ const DeckEditor = () => {
       .select()
       .single();
 
-    console.log("SUPABASE ERROR:", error);
-    console.log("SUPABASE DATA:", data);
-
     if (!error && data) {
       setCards((prev) => [...prev, data]);
       await supabase
         .from("decks")
         .update({ updated_at: new Date().toISOString() })
         .eq("id", id);
+      logActivity?.("study_deck"); // ← only fires on success
     }
     setAdding(false);
   };
@@ -513,7 +505,6 @@ const DeckEditor = () => {
       .eq("id", id)
       .select()
       .single();
-
     if (!error && data) setDeck(data);
   };
 
@@ -548,6 +539,7 @@ const DeckEditor = () => {
 
   return (
     <div className="max-w-2xl mx-auto">
+      {/* ── Header ── */}
       <div className="flex items-center gap-3 mb-5">
         <button
           onClick={() => navigate("/dashboard/decks")}
@@ -586,21 +578,15 @@ const DeckEditor = () => {
 
       <AdSenseAd />
 
-      {/* ── Deck settings ── */}
       <DeckSettings deck={deck} onSave={handleSaveDeck} isDark={isDark} />
-
-      {/* ── Add card form ── */}
       <CardForm onAdd={handleAddCard} loading={adding} isDark={isDark} />
 
       {/* ── Cards list ── */}
       <div className="mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className={`text-sm font-semibold ${textBase}`}>
-            Cards{" "}
-            <span className="text-slate-400 font-normal">({cards.length})</span>
-          </h2>
-        </div>
-
+        <h2 className={`text-sm font-semibold mb-3 ${textBase}`}>
+          Cards{" "}
+          <span className="text-slate-400 font-normal">({cards.length})</span>
+        </h2>
         {cards.length === 0 ? (
           <div className={`rounded-2xl border p-10 text-center ${cardBase}`}>
             <Inbox

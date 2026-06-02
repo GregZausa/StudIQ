@@ -11,6 +11,7 @@ import AddMaterialModal from "../components/modal/AddMaterialModal";
 import { useTheme } from "../context/ThemeContext";
 import Header from "../components/layout/Header";
 import SearchBar from "../components/ui/SearchBar";
+import { decryptMaterials, encryptMaterial } from "../utils/crypto";
 
 const Materials = () => {
   const { userId, session } = useUser();
@@ -35,7 +36,10 @@ const Materials = () => {
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
 
-    if (!error) setMaterials(data || []);
+    if (!error && data) {
+      const decrypted = await decryptMaterials(data, authId);
+      setMaterials(decrypted);
+    }
     setFetching(false);
   }, [userId]);
 

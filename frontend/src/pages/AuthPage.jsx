@@ -19,9 +19,14 @@ const AuthPage = () => {
     setSuccess("");
   };
 
+  useEffect(() => {
+    signOut();
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     reset();
+
     if (!email.trim() || !password.trim()) {
       setError("Please fill in all fields.");
       return;
@@ -40,8 +45,11 @@ const AuthPage = () => {
     }
 
     setLoading(true);
+
     if (tab === "login") {
-      await signOut();
+      // ── Just sign in — no signOut() call needed ──
+      // If there's an existing session, Supabase handles replacing it.
+      // Calling signOut() first was causing the race condition.
       const { error } = await signIn(email.trim(), password);
       if (error) {
         setError(
@@ -52,6 +60,7 @@ const AuthPage = () => {
         setLoading(false);
         return;
       }
+      // onAuthStateChange in UserContext will fire → loadUserRow → loading resolves
       navigate("/dashboard");
     } else {
       const { error } = await signUp(email.trim(), password);
@@ -65,6 +74,7 @@ const AuthPage = () => {
       setPassword("");
       setConfirm("");
     }
+
     setLoading(false);
   };
 
@@ -98,10 +108,9 @@ const AuthPage = () => {
     <>
       <style>{`
         @import url('https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&f[]=cabinet-grotesk@400,500,700,800&display=swap');
-        .font-clash    { font-family: 'Clash Display', sans-serif; }
-        .font-cabinet  { font-family: 'Cabinet Grotesk', sans-serif; }
+        .font-clash   { font-family: 'Clash Display', sans-serif; }
+        .font-cabinet { font-family: 'Cabinet Grotesk', sans-serif; }
 
-        /* noise grain overlay */
         .auth-grain::before {
           content: '';
           position: fixed;
@@ -115,7 +124,6 @@ const AuthPage = () => {
         @keyframes auth-spin { to { transform: rotate(360deg); } }
         .auth-spinner { animation: auth-spin 0.7s linear infinite; }
 
-        /* ghost text stroke */
         .stroke-ghost {
           color: transparent;
           -webkit-text-stroke: 1px rgba(255,255,255,0.12);
@@ -123,18 +131,14 @@ const AuthPage = () => {
       `}</style>
 
       <div className="auth-grain min-h-screen bg-[#080808] flex font-cabinet relative overflow-hidden">
-        {/* ── Atmospheric glows ── */}
         <div className="pointer-events-none fixed -top-1/4 -left-1/4 w-[60vw] h-[60vw] rounded-full bg-indigo-500/10 blur-[100px]" />
         <div className="pointer-events-none fixed -bottom-1/4 -right-1/4 w-[40vw] h-[40vw] rounded-full bg-violet-500/8 blur-[80px]" />
 
-        {/* ── Left brand panel — desktop only ── */}
+        {/* ── Left brand panel ── */}
         <div className="hidden lg:flex flex-col justify-between w-[420px] shrink-0 px-14 py-14 border-r border-white/5 relative z-10">
-          {/* Logo */}
           <div className="font-clash font-bold text-2xl tracking-tight text-white">
             Stud<span className="text-indigo-400">IQ</span>
           </div>
-
-          {/* Tagline */}
           <div>
             <h2 className="font-clash font-bold text-[42px] leading-[1.05] tracking-[-2px] text-white mb-4">
               Study smarter.
@@ -145,8 +149,6 @@ const AuthPage = () => {
               Built for Filipino students who want results, not just effort.
             </p>
           </div>
-
-          {/* Features list */}
           <ul className="space-y-3">
             {FEATURES.map((f) => (
               <li
@@ -158,7 +160,6 @@ const AuthPage = () => {
               </li>
             ))}
           </ul>
-
           <p className="text-[11px] text-white/15">
             © {new Date().getFullYear()} Stud IQ · Free for all students
           </p>
@@ -177,7 +178,7 @@ const AuthPage = () => {
               </p>
             </div>
 
-            {/* Tab switcher */}
+            {/* Tabs */}
             <div className="flex gap-1 bg-white/3 border border-white/8 rounded-xl p-1 mb-8">
               {["login", "signup"].map((t) => (
                 <button
@@ -296,10 +297,8 @@ const AuthPage = () => {
               </button>
             </form>
 
-            {/* Divider */}
             <div className="h-px bg-white/6 my-6" />
 
-            {/* Footer */}
             <div className="text-center space-y-2">
               {tab === "login" && (
                 <p className="text-xs text-white/25">

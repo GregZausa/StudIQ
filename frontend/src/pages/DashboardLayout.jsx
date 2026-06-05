@@ -17,7 +17,7 @@ const DashboardLayout = () => {
     <div
       className={`min-h-screen ${isDark ? "bg-slate-800" : "bg-slate-50"} flex font-sans `}
     >
-      {!userId && name === "Anonymous" && <InfoSetUpModal />}
+      {!userId || name === "Anonymous" && <InfoSetUpModal />}
       <div className="hidden lg:flex lg:flex-col lg:w-60 lg:fixed lg:inset-y-0 lg:z-30">
         <Sidebar />
       </div>

@@ -27,6 +27,7 @@ import Blog from "../pages/Blog";
 import BlogPost from "../pages/BlogPost";
 import StreakPage from "../pages/StreakPage";
 import ClassSchedule from "../pages/ClassSchedule";
+import PricingPage from "../pages/PricingPage";
 
 const router = createBrowserRouter([
   { path: "/", element: <Home /> },
@@ -35,6 +36,7 @@ const router = createBrowserRouter([
   { path: "/contact", element: <Contact /> },
   { path: "/privacy-policy", element: <PrivacyPolicy /> },
   { path: "/terms-of-service", element: <TermsOfService /> },
+  { path: "/pricing", element: <PricingPage /> },
   { path: "/explore", element: <ExplorePage /> },
   { path: "/study/:id", element: <StudyMode /> },
 

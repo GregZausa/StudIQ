@@ -9,15 +9,14 @@ import studIQLogo from "../components/res/stud_iq_logo_dark_mode.png";
 
 const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { name, userId } = useUser();
-  name.charAt(0);
+  const { name, userId, needsOnboarding  } = useUser();
   const { isDark } = useTheme();
 
   return (
     <div
       className={`min-h-screen ${isDark ? "bg-slate-800" : "bg-slate-50"} flex font-sans `}
     >
-      {!userId || name === "Anonymous" && <InfoSetUpModal />}
+      {needsOnboarding && <InfoSetUpModal />}
       <div className="hidden lg:flex lg:flex-col lg:w-60 lg:fixed lg:inset-y-0 lg:z-30">
         <Sidebar />
       </div>

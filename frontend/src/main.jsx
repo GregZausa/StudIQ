@@ -7,16 +7,19 @@ import { UserProvider } from "./context/UserContext.jsx";
 import { ThemeProvider } from "./context/ThemeContext.jsx";
 import { StreakProvider } from "../src/context/StreakContext.jsx";
 import { PomodoroProvider } from "./context/PomodoroContext.jsx";
+import { SubscriptionProvider } from "./context/SubscriptionContext.jsx";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <UserProvider>
       <ThemeProvider>
-        <PomodoroProvider>
+        <SubscriptionProvider>
           <StreakProvider>
-            <App />
+            <PomodoroProvider>
+              <App />
+            </PomodoroProvider>
           </StreakProvider>
-        </PomodoroProvider>
+        </SubscriptionProvider>
       </ThemeProvider>
     </UserProvider>
   </StrictMode>,

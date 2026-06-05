@@ -5,9 +5,10 @@ export const getUserByAuthId = async (authId) => {
     .from("users")
     .select("*")
     .eq("auth_id", authId)
-    .single();
+    .maybeSingle();
 
   if (error) return null;
+
   return data;
 };
 
@@ -42,7 +43,9 @@ export const updateUserName = async (authId, name) => {
 
 export const signUp = async (email, password) => {
   const { data, error } = await supabase.auth.signUp({ email, password });
-  if (error) return { error };
+  if (error) {
+    return { error };
+  }
   return { data };
 };
 

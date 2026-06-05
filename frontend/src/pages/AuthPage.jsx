@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { signIn, signOut, signUp } from "../config/user";
 import { Eye, EyeOff, ArrowRight } from "lucide-react";
@@ -45,11 +45,7 @@ const AuthPage = () => {
     }
 
     setLoading(true);
-
     if (tab === "login") {
-      // ── Just sign in — no signOut() call needed ──
-      // If there's an existing session, Supabase handles replacing it.
-      // Calling signOut() first was causing the race condition.
       const { error } = await signIn(email.trim(), password);
       if (error) {
         setError(
@@ -60,7 +56,6 @@ const AuthPage = () => {
         setLoading(false);
         return;
       }
-      // onAuthStateChange in UserContext will fire → loadUserRow → loading resolves
       navigate("/dashboard");
     } else {
       const { error } = await signUp(email.trim(), password);
@@ -74,7 +69,6 @@ const AuthPage = () => {
       setPassword("");
       setConfirm("");
     }
-
     setLoading(false);
   };
 
@@ -134,7 +128,6 @@ const AuthPage = () => {
         <div className="pointer-events-none fixed -top-1/4 -left-1/4 w-[60vw] h-[60vw] rounded-full bg-indigo-500/10 blur-[100px]" />
         <div className="pointer-events-none fixed -bottom-1/4 -right-1/4 w-[40vw] h-[40vw] rounded-full bg-violet-500/8 blur-[80px]" />
 
-        {/* ── Left brand panel ── */}
         <div className="hidden lg:flex flex-col justify-between w-[420px] shrink-0 px-14 py-14 border-r border-white/5 relative z-10">
           <div className="font-clash font-bold text-2xl tracking-tight text-white">
             Stud<span className="text-indigo-400">IQ</span>
@@ -165,7 +158,6 @@ const AuthPage = () => {
           </p>
         </div>
 
-        {/* ── Right form panel ── */}
         <div className="flex-1 flex items-center justify-center px-6 py-12 relative z-10">
           <div className="w-full max-w-[380px]">
             {/* Mobile logo */}
@@ -178,7 +170,6 @@ const AuthPage = () => {
               </p>
             </div>
 
-            {/* Tabs */}
             <div className="flex gap-1 bg-white/3 border border-white/8 rounded-xl p-1 mb-8">
               {["login", "signup"].map((t) => (
                 <button
@@ -198,7 +189,6 @@ const AuthPage = () => {
               ))}
             </div>
 
-            {/* Heading */}
             <h1 className="font-clash font-bold text-3xl tracking-[-1px] text-white mb-1.5">
               {tab === "login" ? "Welcome back." : "Create account."}
             </h1>
@@ -208,7 +198,6 @@ const AuthPage = () => {
                 : "Join thousands of Filipino students studying smarter."}
             </p>
 
-            {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-3">
               <div>
                 <label className="block text-[10px] font-bold tracking-[1.5px] uppercase text-white/25 mb-1.5">

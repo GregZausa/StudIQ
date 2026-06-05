@@ -9,7 +9,7 @@ import studIQLogo from "../components/res/stud_iq_logo_dark_mode.png";
 
 const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { name, userId, needsOnboarding  } = useUser();
+  const { name, userId, needsOnboarding } = useUser();
   const { isDark } = useTheme();
 
   return (

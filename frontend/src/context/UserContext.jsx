@@ -4,8 +4,8 @@ import {
   useEffect,
   useState,
   useCallback,
-  useRef,
 } from "react";
+
 import { supabase } from "../config/supabase";
 import { getUserByAuthId, createUserRow } from "../config/user";
 
@@ -16,58 +16,67 @@ export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const loadingDone = useRef(false);
-  const finish = () => {
-    if (!loadingDone.current) {
-      loadingDone.current = true;
-      setLoading(false);
-    }
-  };
-
   const loadUserRow = useCallback(async (authId) => {
     try {
       let row = await getUserByAuthId(authId);
-      if (!row) {
-        console.log("No row found, creating...");
-        row = await createUserRow(authId);
-        console.log("createUserRow result:", row);
-      }
-      setUser(row);
+      if (!row) row = await createUserRow(authId);
+      setUser(row || null);
     } catch (err) {
       console.error("loadUserRow error:", err);
-    } finally {
-      finish();
+      setUser(null);
     }
   }, []);
 
   useEffect(() => {
+    let mounted = true;
+
+    const initialize = async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!mounted) return;
+
+        setSession(session);
+
+        if (session?.user) {
+          loadUserRow(session.user.id);
+        } else {
+          setUser(null);
+        }
+      } catch (err) {
+        console.error("initialize error:", err);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    initialize();
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!mounted) return;
       setSession(session);
-
       if (session?.user) {
-        await loadUserRow(session.user.id);
+        loadUserRow(session.user.id); 
       } else {
         setUser(null);
-        finish();
       }
+      setLoading(false);
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        finish();
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, [loadUserRow]);
 
   const refreshUser = useCallback(async () => {
     if (!session?.user) return;
     try {
       const row = await getUserByAuthId(session.user.id);
-      setUser(row);
+      if (row) setUser(row);
     } catch (err) {
       console.error("refreshUser error:", err);
     }

@@ -19,10 +19,6 @@ const AuthPage = () => {
     setSuccess("");
   };
 
-  useEffect(() => {
-    signOut();
-  }, []);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     reset();

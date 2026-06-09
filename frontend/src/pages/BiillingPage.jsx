@@ -46,21 +46,12 @@ const BillingPage = () => {
   const handleUpgrade = async (selectedPlan) => {
     setUpgradeLoading(selectedPlan);
     try {
-      const token = session?.access_token;
-      const res = await fetch("/api/paymongo-checkout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ plan: selectedPlan }),
-      });
-      const data = await res.json();
-      if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
-      } else {
-        alert("Something went wrong. Please try again.");
-      }
+      const { createCheckout } = await import("../lib/api");
+      const checkoutUrl = await createCheckout(
+        selectedPlan,
+        session?.access_token,
+      );
+      window.location.href = checkoutUrl;
     } catch {
       alert("Network error. Please try again.");
     } finally {

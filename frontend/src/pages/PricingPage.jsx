@@ -10,8 +10,6 @@ import {
 import { Check, Zap, X } from "lucide-react";
 import Footer from "./components/layout/Footer";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-
 const COMPARISON = [
   {
     label: "To-do tasks",
@@ -59,8 +57,6 @@ const PricingPage = () => {
   const activePlan = billing === "yearly" ? PLANS.yearly : PLANS.monthly;
 
   const handleUpgrade = async () => {
-    console.log("Upgrade clicked");
-    console.log("isLoggedIn:", isLoggedIn);
     if (!isLoggedIn) {
       navigate("/auth");
       return;
@@ -68,23 +64,15 @@ const PricingPage = () => {
     setLoading(billing);
 
     try {
-      const res = await fetch(
-        `${API_URL}/api/paymongo-checkout`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ plan: billing }),
-          credentials: "include",
-        },
-      );
-      const data = await res.json();
-      if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
-      } else {
-        alert("Something went wrong. Please try again.");
-      }
+      const { supabase } = await import("../config/supabase");
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const { createCheckout } = await import("../lib/api");
+      const checkoutUrl = await createCheckout(billing, session?.access_token);
+      window.location.href = checkoutUrl;
     } catch (err) {
-      alert("Network error. Please try again.");
+      alert("Something went wrong. Please try again.");
       console.log(err);
     } finally {
       setLoading(null);

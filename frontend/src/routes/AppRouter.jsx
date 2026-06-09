@@ -28,6 +28,7 @@ import BlogPost from "../pages/BlogPost";
 import StreakPage from "../pages/StreakPage";
 import ClassSchedule from "../pages/ClassSchedule";
 import PricingPage from "../pages/PricingPage";
+import BillingPage from "../pages/BiillingPage";
 
 const router = createBrowserRouter([
   { path: "/", element: <Home /> },
@@ -71,6 +72,7 @@ const router = createBrowserRouter([
       { path: "decks/:id/study", element: <StudyMode /> },
       { path: "explore", element: <ExplorePage /> },
       { path: "schedule", element: <ClassSchedule /> },
+      { path: "billing", element: <BillingPage /> },
     ],
   },
   { path: "*", element: <Navigate to="/" replace /> },

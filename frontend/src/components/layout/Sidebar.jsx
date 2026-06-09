@@ -17,8 +17,10 @@ import {
   ChevronRight,
   LogOut,
   CalendarDays,
+  Zap,
 } from "lucide-react";
 import FlameWidget from "../widgets/FlameWidget";
+import { useSubscription } from "../../context/SubscriptionContext";
 
 const NAV_ITEMS = [
   {
@@ -54,6 +56,8 @@ const Sidebar = ({ onClose }) => {
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const initial = name ? name.charAt(0).toUpperCase() : "?";
+
+  const { isPremium } = useSubscription() || {};
 
   const handleLogout = async () => {
     await signOut();
@@ -154,9 +158,48 @@ const Sidebar = ({ onClose }) => {
       </nav>
 
       <div
-        className={`px-4 py-4 border-t space-y-1 ${isDark ? "border-slate-700" : "border-slate-100"}`}
+        className={`px-4 py-4 border-t space-y-2 ${isDark ? "border-slate-700" : "border-slate-100"}`}
       >
-        <div className="px-3 pb-2">
+        <div
+          onClick={() =>
+            navigate(isPremium ? "/dashboard/billing" : "/pricing")
+          }
+          className={`mx-1 mb-1 px-3 py-2.5 rounded-xl cursor-pointer transition-all ${
+            isPremium
+              ? isDark
+                ? "bg-indigo-900/30 border border-indigo-700/50 hover:bg-indigo-900/50"
+                : "bg-indigo-50 border border-indigo-200 hover:bg-indigo-100"
+              : isDark
+                ? "bg-slate-700 border border-slate-600 hover:bg-slate-600"
+                : "bg-slate-50 border border-slate-200 hover:bg-slate-100"
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <Zap
+                size={12}
+                className={isPremium ? "text-indigo-500" : "text-slate-400"}
+              />
+              <span
+                className={`text-xs font-bold ${isPremium ? "text-indigo-500" : textMuted}`}
+              >
+                {isPremium ? "Premium" : "Free Plan"}
+              </span>
+            </div>
+            {!isPremium && (
+              <span className="text-[9px] font-bold bg-indigo-500 text-white px-1.5 py-0.5 rounded-full">
+                UPGRADE
+              </span>
+            )}
+          </div>
+          <p className={`text-[10px] mt-0.5 ${textMuted}`}>
+            {isPremium
+              ? "All features unlocked ✨"
+              : "Tap to unlock everything"}
+          </p>
+        </div>
+
+        <div className="mx-1 mb-1 py-1">
           <FlameWidget isDark={isDark} />
         </div>
         <NavLink

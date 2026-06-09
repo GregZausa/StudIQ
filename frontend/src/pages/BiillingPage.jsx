@@ -371,7 +371,7 @@ const BillingPage = () => {
       </div>
 
       <p className="text-center text-[11px] text-slate-300 mt-6">
-        Billing · StudyTools PH 🇵🇭
+        Billing · StudIQ PH 🇵🇭
       </p>
     </div>
   );

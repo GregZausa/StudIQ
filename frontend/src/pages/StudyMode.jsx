@@ -607,7 +607,7 @@ const StudyMode = () => {
       )}
 
       <p className="text-center text-[11px] text-slate-300 mt-8">
-        Study Mode · StudyTools PH 🇵🇭
+        Study Mode · StudIQ PH 🇵🇭
       </p>
     </div>
   );

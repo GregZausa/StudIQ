@@ -188,7 +188,7 @@ const DashboardOverview = () => {
       <AdSenseAd />
 
       <p className="text-center text-[11px] text-slate-500 mt-6">
-        StudyTools · PH Student App 🇵🇭
+        StudIQ · PH Student App 🇵🇭
       </p>
     </div>
   );

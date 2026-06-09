@@ -44,7 +44,7 @@ const DashboardLayout = () => {
             <span
               className={`text-sm font-bold ${isDark ? "text-slate-50" : "text-slate-800"}`}
             >
-              StudyTools
+              StudIQ
             </span>
           </div>
           <div className="flex items-center gap-3">

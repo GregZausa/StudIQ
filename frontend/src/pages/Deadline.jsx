@@ -346,7 +346,7 @@ const Deadlines = () => {
         <AdSenseAd />
 
         <p className="text-center text-[11px] text-slate-300 mt-5">
-          Deadlines · StudyTools PH 🇵🇭
+          Deadlines · StudIQ PH 🇵🇭
         </p>
       </div>
 

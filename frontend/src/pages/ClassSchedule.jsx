@@ -795,7 +795,7 @@ const ClassSchedule = () => {
       <AdSenseAd />
 
       <p className="text-center text-[11px] text-slate-300 mt-6">
-        Class Schedule · StudyTools PH 🇵🇭
+        Class Schedule · StudIQ PH 🇵🇭
       </p>
 
       {showAddSubj && (

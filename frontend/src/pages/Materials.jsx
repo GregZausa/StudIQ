@@ -249,7 +249,7 @@ const Materials = () => {
       )}
 
       <p className="text-center text-[11px] text-slate-300 mt-8">
-        Materials · StudyTools PH 🇵🇭
+        Materials · StudIQ PH 🇵🇭
       </p>
     </div>
   );

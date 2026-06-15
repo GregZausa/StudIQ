@@ -536,7 +536,7 @@ const MyDecks = () => {
       )}
 
       <p className="text-center text-[11px] text-slate-300 mt-5">
-        My Decks · StudyTools PH 🇵🇭
+        My Decks · StudIQ PH 🇵🇭
       </p>
     </div>
   );

@@ -231,7 +231,7 @@ const Notes = () => {
       )}
 
       <p className="text-center text-[11px] text-slate-300 mt-8">
-        Notes · StudyTools PH 🇵🇭
+        Notes · StudIQ PH 🇵🇭
       </p>
 
       <style>{`

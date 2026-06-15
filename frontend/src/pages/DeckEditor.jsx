@@ -615,7 +615,7 @@ const DeckEditor = () => {
       <AdSenseAd />
 
       <p className="text-center text-[11px] text-slate-300 mt-5">
-        Deck Editor · StudyTools PH 🇵🇭
+        Deck Editor · StudIQ PH 🇵🇭
       </p>
     </div>
   );

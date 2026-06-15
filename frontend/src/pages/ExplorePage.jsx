@@ -395,7 +395,7 @@ const ExplorePage = () => {
       {toast && <Toast message={toast} onClose={() => setToast("")} />}
 
       <p className="text-center text-[11px] text-slate-300 mt-5">
-        Explore · StudyTools PH 🇵🇭
+        Explore · StudIQ PH 🇵🇭
       </p>
 
       <style>{`

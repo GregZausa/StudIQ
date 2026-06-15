@@ -485,7 +485,7 @@ const StreakPage = () => {
           <AdSenseAd />
 
           <p className="text-center text-[11px] text-slate-300 mt-4">
-            Study Flame · StudyTools PH 🇵🇭
+            Study Flame · StudIQ PH 🇵🇭
           </p>
         </div>
       )}

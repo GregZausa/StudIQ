@@ -12,16 +12,24 @@ import { useTheme } from "../context/ThemeContext";
 import Header from "../components/layout/Header";
 import SearchBar from "../components/ui/SearchBar";
 import { decryptMaterials, encryptMaterial } from "../utils/crypto";
+import { useStreakContext } from "../context/StreakContext";
+import { useSubscription } from "../context/SubscriptionContext";
+import { isAtLimit } from "../utils/constants/premium.config";
+import { LimitBar } from "../components/PremiumGate";
+import UpgradeModal from "../components/modal/UpgradeModal";
 
 const Materials = () => {
   const { userId, session } = useUser();
   const { isDark } = useTheme();
+  const { logActivity } = useStreakContext(); // ← was missing, caused crash on add
+  const { isPremium } = useSubscription() || { isPremium: false };
   const authId = session?.user?.id;
 
   const [materials, setMaterials] = useState([]);
   const [fetching, setFetching] = useState(true);
   const [adding, setAdding] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("");
   const [filterSubject, setFilterSubject] = useState("");
@@ -41,7 +49,7 @@ const Materials = () => {
       setMaterials(decrypted);
     }
     setFetching(false);
-  }, [userId]);
+  }, [userId, authId]);
 
   useEffect(() => {
     fetchMaterials();
@@ -49,6 +57,13 @@ const Materials = () => {
 
   const handleAdd = async (fields) => {
     if (!userId || !authId) return;
+
+    // ── Premium gate: check free limit before adding ──
+    if (isAtLimit("materials", materials.length, isPremium)) {
+      setShowUpgrade(true);
+      return;
+    }
+
     setAdding(true);
 
     const encrypted = await encryptMaterial(fields, authId);
@@ -70,6 +85,15 @@ const Materials = () => {
   const handleDelete = async (id) => {
     const { error } = await supabase.from("materials").delete().eq("id", id);
     if (!error) setMaterials((prev) => prev.filter((m) => m.id !== id));
+  };
+
+  // ── Open the "add material" modal — gated by limit ──
+  const handleOpenAdd = () => {
+    if (isAtLimit("materials", materials.length, isPremium)) {
+      setShowUpgrade(true);
+      return;
+    }
+    setShowModal(true);
   };
 
   const subjects = [
@@ -119,12 +143,22 @@ const Materials = () => {
         header="Materials"
         subHeader={`${materials.length} resource${materials.length !== 1 ? "s" : ""} saved`}
         icon={<BookOpen size={20} className="text-emerald-500" />}
-        onClick={() => setShowModal(true)}
+        onClick={handleOpenAdd}
         buttoNlabel="Add material"
         buttonStyle="default"
         buttonIcon={<Plus size={15} />}
       />
       <AdSenseAd />
+
+      {/* ── Free plan usage bar ── */}
+      <div className="mb-4">
+        <LimitBar
+          feature="materials"
+          count={materials.length}
+          isDark={isDark}
+        />
+      </div>
+
       <div className="grid grid-cols-4 gap-2.5 mb-5">
         {[
           { label: "Total", value: materials.length, color: "text-slate-700" },
@@ -245,6 +279,15 @@ const Materials = () => {
           onAdd={handleAdd}
           onClose={() => setShowModal(false)}
           loading={adding}
+        />
+      )}
+
+      {/* ── Upgrade modal — shown when free limit reached ── */}
+      {showUpgrade && (
+        <UpgradeModal
+          feature="materials"
+          onClose={() => setShowUpgrade(false)}
+          isDark={isDark}
         />
       )}
 

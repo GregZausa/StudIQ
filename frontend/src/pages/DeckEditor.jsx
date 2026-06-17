@@ -26,9 +26,13 @@ import {
   ChevronUp,
   Inbox,
 } from "lucide-react";
+import { useSubscription } from "../context/SubscriptionContext";
+import { isAtLimit } from "../utils/constants/premium.config";
+import { LimitBar } from "../components/PremiumGate";
+import UpgradeModal from "../components/modal/UpgradeModal";
 
 // ─── CardForm ─────────────────────────────────────────────────────────────────
-const CardForm = ({ onAdd, loading, isDark }) => {
+const CardForm = ({ onAdd, loading, isDark, disabled }) => {
   const [question, setQuestion] = useState("");
   const [type, setType] = useState("flashcard");
   const [answer, setAnswer] = useState("");
@@ -113,6 +117,13 @@ const CardForm = ({ onAdd, loading, isDark }) => {
 
       {open && (
         <div className="px-4 pb-4 border-t border-slate-100 dark:border-slate-700 pt-4 space-y-3">
+          {disabled && (
+            <div
+              className={`rounded-xl px-3 py-2.5 text-xs font-semibold flex items-center gap-2 ${isDark ? "bg-amber-900/20 text-amber-400 border border-amber-800" : "bg-amber-50 text-amber-700 border border-amber-200"}`}
+            >
+              ⚠️ Free plan card limit reached for this deck.
+            </div>
+          )}
           <div>
             <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-1.5">
               Card type
@@ -447,11 +458,13 @@ const DeckEditor = () => {
   const { isDark } = useTheme();
   const navigate = useNavigate();
   const { logActivity } = useStreakContext() || {};
+  const { isPremium } = useSubscription() || { isPremium: false };
 
   const [deck, setDeck] = useState(null);
   const [cards, setCards] = useState([]);
   const [fetching, setFetching] = useState(true);
   const [adding, setAdding] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   const fetchDeck = useCallback(async () => {
     if (!id) return;
@@ -473,8 +486,14 @@ const DeckEditor = () => {
     fetchDeck();
   }, [fetchDeck]);
 
-  // ── Add card — logActivity only on success ──
+  // ── Add card — gated by cards_per_deck limit, logActivity only on success ──
   const handleAddCard = async (fields) => {
+    // ── Premium gate: check per-deck card limit ──
+    if (isAtLimit("cards_per_deck", cards.length, isPremium)) {
+      setShowUpgrade(true);
+      return;
+    }
+
     setAdding(true);
     const { data, error } = await supabase
       .from("cards")
@@ -578,8 +597,22 @@ const DeckEditor = () => {
 
       <AdSenseAd />
 
+      {/* ── Free plan usage bar (per-deck card limit) ── */}
+      <div className="mb-4">
+        <LimitBar
+          feature="cards_per_deck"
+          count={cards.length}
+          isDark={isDark}
+        />
+      </div>
+
       <DeckSettings deck={deck} onSave={handleSaveDeck} isDark={isDark} />
-      <CardForm onAdd={handleAddCard} loading={adding} isDark={isDark} />
+      <CardForm
+        onAdd={handleAddCard}
+        loading={adding}
+        isDark={isDark}
+        disabled={isAtLimit("cards_per_deck", cards.length, isPremium)}
+      />
 
       {/* ── Cards list ── */}
       <div className="mb-6">
@@ -613,6 +646,15 @@ const DeckEditor = () => {
       </div>
 
       <AdSenseAd />
+
+      {/* ── Upgrade modal — shown when free limit reached ── */}
+      {showUpgrade && (
+        <UpgradeModal
+          feature="cards_per_deck"
+          onClose={() => setShowUpgrade(false)}
+          isDark={isDark}
+        />
+      )}
 
       <p className="text-center text-[11px] text-slate-300 mt-5">
         Deck Editor · StudIQ PH 🇵🇭

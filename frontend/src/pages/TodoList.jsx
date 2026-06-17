@@ -29,17 +29,23 @@ import TodoItem from "../components/TodoItem";
 import { useTheme } from "../context/ThemeContext";
 import { decryptTodo, decryptTodoList, encryptTodoList } from "../utils/crypto";
 import { useStreakContext } from "../context/StreakContext";
+import { useSubscription } from "../context/SubscriptionContext";
+import { isAtLimit } from "../utils/constants/premium.config";
+import { LimitBar } from "../components/PremiumGate";
+import UpgradeModal from "../components/modal/UpgradeModal";
 
 const TodoList = () => {
   const navigate = useNavigate();
   const { userId, session } = useUser();
   const { isDark } = useTheme();
   const { logActivity } = useStreakContext();
+  const { isPremium } = useSubscription() || { isPremium: false };
 
   const [todos, setTodos] = useState([]);
   const [fetching, setFetching] = useState(true);
   const [adding, setAdding] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   const [filterSubject, setFilterSubject] = useState("");
   const [filterPriority, setFilterPriority] = useState("");
@@ -70,6 +76,13 @@ const TodoList = () => {
 
   const handleAdd = async (fields) => {
     if (!userId || !authId) return;
+
+    // ── Premium gate: check free limit before adding ──
+    if (isAtLimit("todos", todos.length, isPremium)) {
+      setShowUpgrade(true);
+      return;
+    }
+
     setAdding(true);
 
     const encrypted = await encryptTodoList(fields, authId);
@@ -177,6 +190,11 @@ const TodoList = () => {
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* ── Free plan usage bar ── */}
+          <div className="mb-3">
+            <LimitBar feature="todos" count={todos.length} isDark={isDark} />
           </div>
 
           <AddTodoForm onAdd={handleAdd} loading={adding} isDark={isDark} />
@@ -306,6 +324,15 @@ const TodoList = () => {
           </p>
         </div>
       </div>
+
+      {/* ── Upgrade modal — shown when free limit reached ── */}
+      {showUpgrade && (
+        <UpgradeModal
+          feature="todos"
+          onClose={() => setShowUpgrade(false)}
+          isDark={isDark}
+        />
+      )}
 
       <style>{`
         @keyframes fadeSlideIn {

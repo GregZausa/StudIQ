@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Zap } from "lucide-react";
-import { useSubscription } from "../../context/SubscriptionContext";
-import { getLimitInfo } from "../../utils/constants/premium.config";
-import UpgradeModal from "./UpgradeModal";
+import { useSubscription } from "../context/SubscriptionContext";
+import { getLimitInfo } from "../utils/constants/premium.config";
+import UpgradeModal from "../components/modal/UpgradeModal";
 
 // ─── PremiumBadge — inline badge shown in sidebar/header ─────────────────────
 export const PremiumBadge = () => (

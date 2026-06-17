@@ -12,6 +12,12 @@ import AddDeadlineForm from "../components/forms/AddDeadlineForm";
 import DeadlineItem from "../components/DeadlineItem";
 import Header from "../components/layout/Header";
 import { useTheme } from "../context/ThemeContext";
+import { encryptDeadline, decryptDeadlines } from "../utils/crypto";
+import { useStreakContext } from "../context/StreakContext";
+import { useSubscription } from "../context/SubscriptionContext";
+import { isAtLimit } from "../utils/constants/premium.config";
+import { LimitBar } from "../components/PremiumGate";
+import UpgradeModal from "../components/modal/UpgradeModal";
 
 const ALARM_TIERS = [
   {
@@ -49,6 +55,8 @@ const TIER_WINDOW_MS = 30 * 1000;
 const Deadlines = () => {
   const { userId, session } = useUser();
   const { isDark } = useTheme();
+  const { logActivity } = useStreakContext();
+  const { isPremium } = useSubscription() || { isPremium: false };
   const authId = session?.user?.id;
   const now = useNow();
 
@@ -58,6 +66,7 @@ const Deadlines = () => {
   const [filterType, setFilterType] = useState("");
   const [filterStatus, setFilterStatus] = useState("upcoming");
   const [showFilter, setShowFilter] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
   const [notifGranted, setNotifGranted] = useState(
     Notification.permission === "granted",
   );
@@ -88,7 +97,7 @@ const Deadlines = () => {
   };
 
   const fetchDeadlines = useCallback(async () => {
-    if (!userId) return;
+    if (!userId || !authId) return;
     setFetching(true);
     const { data, error } = await supabase
       .from("deadlines")
@@ -96,9 +105,12 @@ const Deadlines = () => {
       .eq("user_id", userId)
       .order("due_date", { ascending: true });
 
-    if (!error) setDeadlines(data || []);
+    if (!error && data) {
+      const decrypted = await decryptDeadlines(data, authId);
+      setDeadlines(decrypted);
+    }
     setFetching(false);
-  }, [userId]);
+  }, [userId, authId]);
 
   useEffect(() => {
     fetchDeadlines();
@@ -140,6 +152,13 @@ const Deadlines = () => {
 
   const handleAdd = async (fields) => {
     if (!userId || !authId) return;
+
+    // ── Premium gate: check free limit before adding ──
+    if (isAtLimit("deadlines", deadlines.length, isPremium)) {
+      setShowUpgrade(true);
+      return;
+    }
+
     setAdding(true);
 
     const encrypted = await encryptDeadline(fields, authId);
@@ -170,8 +189,10 @@ const Deadlines = () => {
       .select()
       .single();
 
-    if (!error && data)
-      setDeadlines((prev) => prev.map((d) => (d.id === id ? data : d)));
+    if (!error && data) {
+      const decrypted = await decryptDeadlines([data], authId);
+      setDeadlines((prev) => prev.map((d) => (d.id === id ? decrypted[0] : d)));
+    }
   };
 
   const handleDelete = async (id) => {
@@ -234,6 +255,15 @@ const Deadlines = () => {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* ── Free plan usage bar ── */}
+        <div className="mb-4">
+          <LimitBar
+            feature="deadlines"
+            count={deadlines.length}
+            isDark={isDark}
+          />
         </div>
 
         {notifGranted && (
@@ -349,6 +379,15 @@ const Deadlines = () => {
           Deadlines · StudIQ PH 🇵🇭
         </p>
       </div>
+
+      {/* ── Upgrade modal — shown when free limit reached ── */}
+      {showUpgrade && (
+        <UpgradeModal
+          feature="deadlines"
+          onClose={() => setShowUpgrade(false)}
+          isDark={isDark}
+        />
+      )}
 
       <style>{`
         @keyframes fadeSlideIn {

@@ -26,6 +26,10 @@ import {
   BookOpen,
   Inbox,
 } from "lucide-react";
+import { useSubscription } from "../context/SubscriptionContext";
+import { isAtLimit } from "../utils/constants/premium.config";
+import { LimitBar } from "../components/PremiumGate";
+import UpgradeModal from "../components/modal/UpgradeModal";
 
 const AddSubjectModal = ({ onAdd, onClose, loading, isDark }) => {
   const [name, setName] = useState("");
@@ -102,17 +106,12 @@ const AddSubjectModal = ({ onAdd, onClose, loading, isDark }) => {
                   key={c.value}
                   onClick={() => setColor(c.value)}
                   title={c.label}
-                  className={`w-7 h-7 rounded-full transition-all cursor-pointer ${c.bg} ${
-                    color === c.value
-                      ? "ring-2 ring-offset-2 ring-slate-400 scale-110"
-                      : "opacity-60 hover:opacity-100"
-                  }`}
+                  className={`w-7 h-7 rounded-full transition-all cursor-pointer ${c.bg} ${color === c.value ? "ring-2 ring-offset-2 ring-slate-400 scale-110" : "opacity-60 hover:opacity-100"}`}
                 />
               ))}
             </div>
           </div>
 
-          {/* Preview */}
           {name && (
             <div
               className={`px-3 py-2 rounded-xl border ${getColor(color).light} ${getColor(color).border}`}
@@ -408,6 +407,7 @@ const NewSemesterModal = ({ onClose, onCreate, existingLabels, isDark }) => {
 const ClassSchedule = () => {
   const { userId } = useUser();
   const { isDark } = useTheme();
+  const { isPremium } = useSubscription() || { isPremium: false };
 
   const [semesters, setSemesters] = useState([]);
   const [activeSem, setActiveSem] = useState(null);
@@ -420,6 +420,7 @@ const ClassSchedule = () => {
   const [showAddSlot, setShowAddSlot] = useState(false);
   const [slotTarget, setSlotTarget] = useState(null);
   const [showNewSem, setShowNewSem] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   const fetchSemesters = useCallback(async () => {
     if (!userId) return;
@@ -473,7 +474,21 @@ const ClassSchedule = () => {
     }
   };
 
+  // ── Open "new semester" modal — gated by limit ──
+  const handleOpenNewSem = () => {
+    if (isAtLimit("semesters", semesters.length, isPremium)) {
+      setShowUpgrade(true);
+      return;
+    }
+    setShowNewSem(true);
+  };
+
   const handleCopySemester = async () => {
+    // ── Premium gate: copying creates a new semester too ──
+    if (isAtLimit("semesters", semesters.length, isPremium)) {
+      setShowUpgrade(true);
+      return;
+    }
     if (!activeSem || subjects.length === 0) return;
     const { data: newSem, error } = await supabase
       .from("semesters")
@@ -653,6 +668,15 @@ const ClassSchedule = () => {
 
       <AdSenseAd />
 
+      {/* ── Free plan usage bar (semester limit) ── */}
+      <div className="mb-4">
+        <LimitBar
+          feature="semesters"
+          count={semesters.length}
+          isDark={isDark}
+        />
+      </div>
+
       <div
         className={`rounded-2xl border p-4 mb-5 flex items-center gap-3 flex-wrap ${cardBase}`}
       >
@@ -678,7 +702,7 @@ const ClassSchedule = () => {
 
         <div className="flex items-center gap-2 flex-wrap">
           <button
-            onClick={() => setShowNewSem(true)}
+            onClick={handleOpenNewSem}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold cursor-pointer transition-colors ${isDark ? "border-slate-700 text-slate-300 hover:bg-slate-700" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}
           >
             <Plus size={12} /> New sem
@@ -752,7 +776,7 @@ const ClassSchedule = () => {
             No semester yet.
           </div>
           <button
-            onClick={() => setShowNewSem(true)}
+            onClick={handleOpenNewSem}
             className="px-4 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold cursor-pointer"
           >
             Create your first semester →
@@ -824,6 +848,15 @@ const ClassSchedule = () => {
           onClose={() => setShowNewSem(false)}
           onCreate={handleCreateSemester}
           existingLabels={semesters.map((s) => s.label)}
+        />
+      )}
+
+      {/* ── Upgrade modal — shown when semester limit reached ── */}
+      {showUpgrade && (
+        <UpgradeModal
+          feature="semesters"
+          onClose={() => setShowUpgrade(false)}
+          isDark={isDark}
         />
       )}
     </div>

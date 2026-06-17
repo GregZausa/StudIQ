@@ -17,16 +17,22 @@ import {
   decryptText,
 } from "../utils/crypto";
 import { useStreakContext } from "../context/StreakContext";
+import { useSubscription } from "../context/SubscriptionContext";
+import { isAtLimit } from "../utils/constants/premium.config";
+import { LimitBar } from "../components/PremiumGate";
+import UpgradeModal from "../components/modal/UpgradeModal";
 
 const Notes = () => {
   const { userId, session } = useUser();
   const { isDark } = useTheme();
   const { logActivity } = useStreakContext();
+  const { isPremium } = useSubscription() || { isPremium: false };
 
   const [notes, setNotes] = useState([]);
   const [fetching, setFetching] = useState(true);
   const [adding, setAdding] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
   const [search, setSearch] = useState("");
   const [filterColor, setFilterColor] = useState("");
   const [filterSubject, setFilterSubject] = useState("");
@@ -56,6 +62,13 @@ const Notes = () => {
 
   const handleAdd = async (fields) => {
     if (!userId || !authId) return;
+
+    // ── Premium gate: check free limit before adding ──
+    if (isAtLimit("notes", notes.length, isPremium)) {
+      setShowUpgrade(true);
+      return;
+    }
+
     setAdding(true);
 
     const encrypted = await encryptNote(fields, authId);
@@ -122,6 +135,15 @@ const Notes = () => {
 
   const activeFilters = [filterColor, filterSubject].filter(Boolean).length;
 
+  // ── Open the "add note" modal — gated by limit ──
+  const handleOpenAdd = () => {
+    if (isAtLimit("notes", notes.length, isPremium)) {
+      setShowUpgrade(true);
+      return;
+    }
+    setShowModal(true);
+  };
+
   return (
     <div className="max-w-4xl mx-auto">
       <Header
@@ -132,10 +154,15 @@ const Notes = () => {
         buttoNlabel="New note"
         buttonIcon={<Plus size={15} />}
         buttonStyle="default"
-        onClick={() => setShowModal(true)}
+        onClick={handleOpenAdd}
       />
 
       <AdSenseAd />
+
+      {/* ── Free plan usage bar ── */}
+      <div className="mb-4">
+        <LimitBar feature="notes" count={notes.length} isDark={isDark} />
+      </div>
 
       {/* ── Search + filters ── */}
       <div className="space-y-2 mb-5">
@@ -227,6 +254,15 @@ const Notes = () => {
           onAdd={handleAdd}
           onClose={() => setShowModal(false)}
           loading={adding}
+        />
+      )}
+
+      {/* ── Upgrade modal — shown when free limit reached ── */}
+      {showUpgrade && (
+        <UpgradeModal
+          feature="notes"
+          onClose={() => setShowUpgrade(false)}
+          isDark={isDark}
         />
       )}
 

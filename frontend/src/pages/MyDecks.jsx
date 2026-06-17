@@ -27,6 +27,10 @@ import {
   Copy,
 } from "lucide-react";
 import SearchBar from "../components/ui/SearchBar";
+import { useSubscription } from "../context/SubscriptionContext";
+import { isAtLimit } from "../utils/constants/premium.config";
+import { LimitBar } from "../components/PremiumGate";
+import UpgradeModal from "../components/modal/UpgradeModal";
 
 const DeckModal = ({ onClose, onSave, loading, initial, isDark }) => {
   const [title, setTitle] = useState(initial?.title || "");
@@ -274,11 +278,13 @@ const MyDecks = () => {
   const navigate = useNavigate();
   const { userId } = useUser();
   const { isDark } = useTheme();
+  const { isPremium } = useSubscription() || { isPremium: false };
 
   const [decks, setDecks] = useState([]);
   const [fetching, setFetching] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
   const [editDeck, setEditDeck] = useState(null);
   const [filterType, setFilterType] = useState("");
   const [search, setSearch] = useState("");
@@ -370,6 +376,15 @@ const MyDecks = () => {
     navigate(`/dashboard/decks/${deck.id}/study`);
   };
 
+  // ── Open the "new deck" modal — gated by limit ──
+  const handleOpenCreate = () => {
+    if (isAtLimit("decks", decks.length, isPremium)) {
+      setShowUpgrade(true);
+      return;
+    }
+    setShowModal(true);
+  };
+
   const filtered = decks
     .filter((d) => !filterType || d.type === filterType)
     .filter(
@@ -396,7 +411,7 @@ const MyDecks = () => {
           </p>
         </div>
         <button
-          onClick={() => setShowModal(true)}
+          onClick={handleOpenCreate}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold transition-colors cursor-pointer"
         >
           <Plus size={15} /> New deck
@@ -404,6 +419,11 @@ const MyDecks = () => {
       </div>
 
       <AdSenseAd />
+
+      {/* ── Free plan usage bar ── */}
+      <div className="mb-4">
+        <LimitBar feature="decks" count={decks.length} isDark={isDark} />
+      </div>
 
       {/* ── Stats ── */}
       <div className="grid grid-cols-3 gap-2.5 mb-5">
@@ -532,6 +552,15 @@ const MyDecks = () => {
           initial={editDeck}
           onClose={() => setEditDeck(null)}
           onSave={handleUpdate}
+        />
+      )}
+
+      {/* ── Upgrade modal — shown when free limit reached ── */}
+      {showUpgrade && (
+        <UpgradeModal
+          feature="decks"
+          onClose={() => setShowUpgrade(false)}
+          isDark={isDark}
         />
       )}
 

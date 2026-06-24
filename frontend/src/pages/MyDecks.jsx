@@ -24,14 +24,31 @@ import {
   X,
   Inbox,
   Check,
-  Copy,
 } from "lucide-react";
 import SearchBar from "../components/ui/SearchBar";
 import { useSubscription } from "../context/SubscriptionContext";
 import { isAtLimit } from "../utils/constants/premium.config";
 import { LimitBar } from "../components/PremiumGate";
 import UpgradeModal from "../components/modal/UpgradeModal";
+import AnonBanner from "../components/ui/AnonBanner";
 
+// ─── localStorage key for anon decks ─────────────────────────────────────────
+const ANON_DECKS_KEY = "studiq_anon_decks";
+
+const getAnonDecks = () => {
+  try {
+    return JSON.parse(localStorage.getItem(ANON_DECKS_KEY) || "[]");
+  } catch {
+    return [];
+  }
+};
+const saveAnonDecks = (decks) => {
+  try {
+    localStorage.setItem(ANON_DECKS_KEY, JSON.stringify(decks));
+  } catch {}
+};
+
+// ─── DeckModal ────────────────────────────────────────────────────────────────
 const DeckModal = ({ onClose, onSave, loading, initial, isDark }) => {
   const [title, setTitle] = useState(initial?.title || "");
   const [subject, setSubject] = useState(initial?.subject || "");
@@ -109,15 +126,14 @@ const DeckModal = ({ onClose, onSave, loading, initial, isDark }) => {
 
           <div>
             <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-1.5">
-              Content
+              Description
             </div>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Short description (optional)..."
               rows={2}
-              className={`w-full px-4 py-3 rounded-xl border text-sm placeholder:text-slate-400 outline-none resize-none transition-all
-                ${isDark ? "bg-slate-800 border-slate-700 text-slate-100 focus:border-indigo-500" : "bg-white border-slate-200 text-slate-700 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"}`}
+              className={`w-full px-4 py-3 rounded-xl border text-sm placeholder:text-slate-400 outline-none resize-none transition-all ${isDark ? "bg-slate-800 border-slate-700 text-slate-100 focus:border-indigo-500" : "bg-white border-slate-200 text-slate-700 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"}`}
             />
           </div>
 
@@ -146,7 +162,6 @@ const DeckModal = ({ onClose, onSave, loading, initial, isDark }) => {
             </div>
           </div>
 
-          {/* Show creator option — only for public */}
           {visibility === "public" && (
             <label className="flex items-center gap-2.5 cursor-pointer">
               <div
@@ -186,7 +201,7 @@ const DeckModal = ({ onClose, onSave, loading, initial, isDark }) => {
   );
 };
 
-// ─── Deck Card ────────────────────────────────────────────────────────────────
+// ─── DeckCard ─────────────────────────────────────────────────────────────────
 const DeckCard = ({ deck, onEdit, onDelete, onStudy, isDark }) => {
   const typeBadge = TYPE_BADGE[deck.type] || TYPE_BADGE.flashcard;
   const visibilityBadge =
@@ -194,10 +209,8 @@ const DeckCard = ({ deck, onEdit, onDelete, onStudy, isDark }) => {
 
   return (
     <div
-      className={`rounded-2xl border p-4 flex flex-col gap-3 transition-all hover:shadow-sm group
-      ${isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200"}`}
+      className={`rounded-2xl border p-4 flex flex-col gap-3 transition-all hover:shadow-sm ${isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200"}`}
     >
-      {/* Header */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <h3
@@ -220,7 +233,6 @@ const DeckCard = ({ deck, onEdit, onDelete, onStudy, isDark }) => {
         </div>
       </div>
 
-      {/* Description */}
       {deck.description && (
         <p
           className={`text-xs leading-relaxed line-clamp-2 ${isDark ? "text-slate-400" : "text-slate-500"}`}
@@ -229,7 +241,6 @@ const DeckCard = ({ deck, onEdit, onDelete, onStudy, isDark }) => {
         </p>
       )}
 
-      {/* Badges */}
       <div className="flex items-center gap-2 flex-wrap">
         <span
           className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md border ${typeBadge.bg}`}
@@ -246,7 +257,6 @@ const DeckCard = ({ deck, onEdit, onDelete, onStudy, isDark }) => {
         </span>
       </div>
 
-      {/* Actions */}
       <div className="flex gap-2 pt-1 border-t border-slate-100 dark:border-slate-700">
         <button
           onClick={() => onStudy(deck)}
@@ -256,15 +266,13 @@ const DeckCard = ({ deck, onEdit, onDelete, onStudy, isDark }) => {
         </button>
         <button
           onClick={() => onEdit(deck)}
-          className={`w-8 h-8 rounded-xl border flex items-center justify-center text-slate-400 hover:text-indigo-500 transition-colors cursor-pointer
-            ${isDark ? "border-slate-700 hover:bg-slate-700" : "border-slate-200 hover:bg-slate-50"}`}
+          className={`w-8 h-8 rounded-xl border flex items-center justify-center text-slate-400 hover:text-indigo-500 transition-colors cursor-pointer ${isDark ? "border-slate-700 hover:bg-slate-700" : "border-slate-200 hover:bg-slate-50"}`}
         >
           <Pencil size={13} />
         </button>
         <button
           onClick={() => onDelete(deck.id)}
-          className={`w-8 h-8 rounded-xl border flex items-center justify-center text-slate-400 hover:text-red-400 transition-colors cursor-pointer
-            ${isDark ? "border-slate-700 hover:bg-slate-700" : "border-slate-200 hover:bg-slate-50"}`}
+          className={`w-8 h-8 rounded-xl border flex items-center justify-center text-slate-400 hover:text-red-400 transition-colors cursor-pointer ${isDark ? "border-slate-700 hover:bg-slate-700" : "border-slate-200 hover:bg-slate-50"}`}
         >
           <Trash2 size={13} />
         </button>
@@ -273,10 +281,10 @@ const DeckCard = ({ deck, onEdit, onDelete, onStudy, isDark }) => {
   );
 };
 
-// ─── Main MyDecks Page ────────────────────────────────────────────────────────
+// ─── Main MyDecks ─────────────────────────────────────────────────────────────
 const MyDecks = () => {
   const navigate = useNavigate();
-  const { userId } = useUser();
+  const { userId, isAnon } = useUser();
   const { isDark } = useTheme();
   const { isPremium } = useSubscription() || { isPremium: false };
 
@@ -289,9 +297,18 @@ const MyDecks = () => {
   const [filterType, setFilterType] = useState("");
   const [search, setSearch] = useState("");
 
+  // ── Fetch ──
   const fetchDecks = useCallback(async () => {
-    if (!userId) return;
     setFetching(true);
+    if (isAnon) {
+      setDecks(getAnonDecks());
+      setFetching(false);
+      return;
+    }
+    if (!userId) {
+      setFetching(false);
+      return;
+    }
 
     const { data: deckData, error } = await supabase
       .from("decks")
@@ -317,15 +334,46 @@ const MyDecks = () => {
 
     setDecks(deckData.map((d) => ({ ...d, card_count: countMap[d.id] || 0 })));
     setFetching(false);
-  }, [userId]);
+  }, [userId, isAnon]);
 
   useEffect(() => {
     fetchDecks();
   }, [fetchDecks]);
 
+  // ── Open create — gated ──
+  const handleOpenCreate = () => {
+    if (isAtLimit("decks", decks.length, isPremium, isAnon)) {
+      setShowUpgrade(true);
+      return;
+    }
+    setShowModal(true);
+  };
+
+  // ── Create ──
   const handleCreate = async (fields) => {
-    if (!userId) return;
     setSaving(true);
+
+    if (isAnon) {
+      const newDeck = {
+        id: crypto.randomUUID(),
+        title: fields.title,
+        subject: fields.subject || null,
+        description: fields.description || null,
+        type: fields.type || "flashcard",
+        visibility: "private",
+        card_count: 0,
+        updated_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+      };
+      const updated = [newDeck, ...decks];
+      setDecks(updated);
+      saveAnonDecks(updated);
+      setSaving(false);
+      setShowModal(false);
+      navigate(`/dashboard/decks/${newDeck.id}`);
+      return;
+    }
+
     const { data, error } = await supabase
       .from("decks")
       .insert({ ...fields, user_id: userId })
@@ -335,15 +383,29 @@ const MyDecks = () => {
     if (!error && data) {
       setDecks((prev) => [{ ...data, card_count: 0 }, ...prev]);
       setShowModal(false);
-      // Navigate to editor right away
       navigate(`/dashboard/decks/${data.id}`);
     }
     setSaving(false);
   };
 
+  // ── Update ──
   const handleUpdate = async (fields) => {
     if (!editDeck) return;
     setSaving(true);
+
+    if (isAnon) {
+      const updated = decks.map((d) =>
+        d.id === editDeck.id
+          ? { ...d, ...fields, updated_at: new Date().toISOString() }
+          : d,
+      );
+      setDecks(updated);
+      saveAnonDecks(updated);
+      setEditDeck(null);
+      setSaving(false);
+      return;
+    }
+
     const { data, error } = await supabase
       .from("decks")
       .update({ ...fields, updated_at: new Date().toISOString() })
@@ -362,27 +424,33 @@ const MyDecks = () => {
     setSaving(false);
   };
 
+  // ── Delete ──
   const handleDelete = async (id) => {
     if (!confirm("Delete this deck and all its cards?")) return;
+    if (isAnon) {
+      const updated = decks.filter((d) => d.id !== id);
+      setDecks(updated);
+      saveAnonDecks(updated);
+      // Also remove anon cards for this deck
+      try {
+        const allCards = JSON.parse(
+          localStorage.getItem("studiq_anon_cards") || "{}",
+        );
+        delete allCards[id];
+        localStorage.setItem("studiq_anon_cards", JSON.stringify(allCards));
+      } catch {}
+      return;
+    }
     const { error } = await supabase.from("decks").delete().eq("id", id);
     if (!error) setDecks((prev) => prev.filter((d) => d.id !== id));
   };
 
   const handleStudy = (deck) => {
-    if (deck.card_count === 0) {
+    if ((deck.card_count ?? 0) === 0) {
       alert("Add some cards first before studying!");
       return;
     }
     navigate(`/dashboard/decks/${deck.id}/study`);
-  };
-
-  // ── Open the "new deck" modal — gated by limit ──
-  const handleOpenCreate = () => {
-    if (isAtLimit("decks", decks.length, isPremium)) {
-      setShowUpgrade(true);
-      return;
-    }
-    setShowModal(true);
   };
 
   const filtered = decks
@@ -408,6 +476,7 @@ const MyDecks = () => {
           <p className="text-xs text-slate-400 mt-0.5">
             {decks.length} deck{decks.length !== 1 ? "s" : ""} · {totalCards}{" "}
             total cards
+            {isAnon && " · guest mode"}
           </p>
         </div>
         <button
@@ -420,9 +489,17 @@ const MyDecks = () => {
 
       <AdSenseAd />
 
-      {/* ── Free plan usage bar ── */}
+      {/* ── Anon banner ── */}
+      <AnonBanner isDark={isDark} />
+
+      {/* ── Limit bar ── */}
       <div className="mb-4">
-        <LimitBar feature="decks" count={decks.length} isDark={isDark} />
+        <LimitBar
+          feature="decks"
+          count={decks.length}
+          isDark={isDark}
+          isAnon={isAnon}
+        />
       </div>
 
       {/* ── Stats ── */}
@@ -455,17 +532,17 @@ const MyDecks = () => {
       </div>
 
       {/* ── Search + filter ── */}
-      <div className="space-y-2 mb-5">
+      <div className="space-y-2 mb-3">
         <SearchBar
           isDark={isDark}
           onChange={(e) => setSearch(e.target.value)}
           value={search}
           onClick={() => setSearch("")}
           buttonIcon={<X size={13} />}
-          placeholder="Search materials..."
+          placeholder="Search decks..."
         />
       </div>
-      <div className="w-44">
+      <div className="w-44 mb-5">
         <SelectBox
           isDark={isDark}
           options={[{ value: "", label: "All types" }, ...DECK_TYPES]}
@@ -555,12 +632,12 @@ const MyDecks = () => {
         />
       )}
 
-      {/* ── Upgrade modal — shown when free limit reached ── */}
       {showUpgrade && (
         <UpgradeModal
           feature="decks"
           onClose={() => setShowUpgrade(false)}
           isDark={isDark}
+          isAnon={isAnon}
         />
       )}
 

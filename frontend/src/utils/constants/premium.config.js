@@ -1,3 +1,4 @@
+// ─── Pricing ──────────────────────────────────────────────────────────────────
 export const PLANS = {
   free: {
     id: "free",
@@ -27,6 +28,17 @@ export const PLANS = {
   },
 };
 
+// ─── Anonymous user limits (strictest) ───────────────────────────────────────
+// Anon users store data in localStorage only
+export const ANON_LIMITS = {
+  todos: 5,
+  notes: 3,
+  decks: 1,
+  cards_per_deck: 10,
+  // deadlines, materials, semesters — not available to anon
+};
+
+// ─── Free logged-in limits ────────────────────────────────────────────────────
 export const FREE_LIMITS = {
   todos: 20,
   deadlines: 10,
@@ -37,6 +49,7 @@ export const FREE_LIMITS = {
   semesters: 1,
 };
 
+// ─── Premium features list ────────────────────────────────────────────────────
 export const PREMIUM_FEATURES = [
   {
     icon: "♾️",
@@ -70,27 +83,37 @@ export const PREMIUM_FEATURES = [
   },
 ];
 
+// ─── Limit messages ───────────────────────────────────────────────────────────
 export const LIMIT_MESSAGES = {
-  todos: (n) => `You've reached the ${n}-task limit on the free plan.`,
-  deadlines: (n) => `You've reached the ${n}-deadline limit on the free plan.`,
-  notes: (n) => `You've reached the ${n}-note limit on the free plan.`,
-  materials: (n) => `You've reached the ${n}-material limit on the free plan.`,
-  decks: (n) => `You've reached the ${n}-deck limit on the free plan.`,
-  cards_per_deck: (n) =>
-    `You've reached the ${n}-card limit per deck on the free plan.`,
+  todos: (n) => `You've reached the ${n}-task limit.`,
+  deadlines: (n) => `You've reached the ${n}-deadline limit.`,
+  notes: (n) => `You've reached the ${n}-note limit.`,
+  materials: (n) => `You've reached the ${n}-material limit.`,
+  decks: (n) => `You've reached the ${n}-deck limit.`,
+  cards_per_deck: (n) => `You've reached the ${n}-card limit per deck.`,
   semesters: (n) => `The free plan only supports ${n} semester.`,
 };
 
-export function isAtLimit(feature, currentCount, isPremium) {
+// ─── Get the effective limit for a user ──────────────────────────────────────
+export function getLimit(feature, isPremium, isAnon) {
+  if (isPremium) return null; // unlimited
+  if (isAnon) return ANON_LIMITS[feature] ?? FREE_LIMITS[feature] ?? null;
+  return FREE_LIMITS[feature] ?? null;
+}
+
+// ─── Check if user has hit their limit ───────────────────────────────────────
+export function isAtLimit(feature, currentCount, isPremium, isAnon = false) {
   if (isPremium) return false;
-  const limit = FREE_LIMITS[feature];
-  if (limit === undefined) return false;
+  const limit = getLimit(feature, isPremium, isAnon);
+  if (limit === null || limit === undefined) return false;
   return currentCount >= limit;
 }
 
-export function getLimitInfo(feature, currentCount, isPremium) {
+// ─── Get limit info for display ───────────────────────────────────────────────
+export function getLimitInfo(feature, currentCount, isPremium, isAnon = false) {
   if (isPremium) return { atLimit: false, count: currentCount, limit: null };
-  const limit = FREE_LIMITS[feature];
+  const limit = getLimit(feature, isPremium, isAnon);
+  if (!limit) return { atLimit: false, count: currentCount, limit: null };
   return {
     atLimit: currentCount >= limit,
     count: currentCount,

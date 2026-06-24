@@ -1,42 +1,45 @@
 import { useState, useEffect, useCallback } from "react";
 import AdSenseAd from "../utils/AdSenseAd";
 import Header from "../components/layout/Header";
-import FloatingLabelInput from "../components/ui/FloatingLabelInput";
 import SelectBox from "../components/ui/SelectBox";
 import { useUser } from "../context/UserContext";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "../config/supabase";
+import { CheckSquare, SlidersHorizontal, X, Inbox } from "lucide-react";
 import {
-  CheckSquare,
-  Plus,
-  Trash2,
-  SlidersHorizontal,
-  X,
-  CalendarDays,
-  BookOpen,
-  Inbox,
-} from "lucide-react";
-import {
-  PRIORITIES,
   PRIORITY_FILTER,
   SORT_OPTIONS,
   STATUS_FILTER,
   PRIORITY_ORDER,
-  PRIORITY_STYLES,
 } from "../utils/constants/todo-config";
 import AddTodoForm from "../components/forms/AddTodoForm";
 import TodoItem from "../components/TodoItem";
 import { useTheme } from "../context/ThemeContext";
-import { decryptTodo, decryptTodoList, encryptTodoList } from "../utils/crypto";
+import { decryptTodoList, encryptTodoList } from "../utils/crypto";
 import { useStreakContext } from "../context/StreakContext";
 import { useSubscription } from "../context/SubscriptionContext";
 import { isAtLimit } from "../utils/constants/premium.config";
 import { LimitBar } from "../components/PremiumGate";
 import UpgradeModal from "../components/modal/UpgradeModal";
+import AnonBanner from "../components/ui/AnonBanner";
+
+// ─── localStorage key for anon todos ─────────────────────────────────────────
+const ANON_TODOS_KEY = "studiq_anon_todos";
+
+const getAnonTodos = () => {
+  try {
+    return JSON.parse(localStorage.getItem(ANON_TODOS_KEY) || "[]");
+  } catch {
+    return [];
+  }
+};
+const saveAnonTodos = (todos) => {
+  try {
+    localStorage.setItem(ANON_TODOS_KEY, JSON.stringify(todos));
+  } catch {}
+};
 
 const TodoList = () => {
-  const navigate = useNavigate();
-  const { userId, session } = useUser();
+  const { userId, session, isAnon } = useUser();
   const { isDark } = useTheme();
   const { logActivity } = useStreakContext();
   const { isPremium } = useSubscription() || { isPremium: false };
@@ -54,9 +57,19 @@ const TodoList = () => {
 
   const authId = session?.user?.id;
 
+  // ── Fetch: localStorage for anon, Supabase for logged-in ──
   const fetchTodos = useCallback(async () => {
-    if (!userId || !authId) return;
     setFetching(true);
+    if (isAnon) {
+      setTodos(getAnonTodos());
+      setFetching(false);
+      return;
+    }
+    if (!userId || !authId) {
+      setFetching(false);
+      return;
+    }
+
     const { data, error } = await supabase
       .from("todos")
       .select("*")
@@ -68,23 +81,40 @@ const TodoList = () => {
       setTodos(decrypted);
     }
     setFetching(false);
-  }, [userId]);
+  }, [userId, authId, isAnon]);
 
   useEffect(() => {
     fetchTodos();
   }, [fetchTodos]);
 
+  // ── Add ──
   const handleAdd = async (fields) => {
-    if (!userId || !authId) return;
-
-    // ── Premium gate: check free limit before adding ──
-    if (isAtLimit("todos", todos.length, isPremium)) {
+    if (isAtLimit("todos", todos.length, isPremium, isAnon)) {
       setShowUpgrade(true);
       return;
     }
 
     setAdding(true);
 
+    if (isAnon) {
+      // ── Anon: save to localStorage ──
+      const newTodo = {
+        id: crypto.randomUUID(),
+        title: fields.title,
+        subject: fields.subject || null,
+        priority: fields.priority || "medium",
+        due_date: fields.due_date || null,
+        completed: false,
+        created_at: new Date().toISOString(),
+      };
+      const updated = [newTodo, ...todos];
+      setTodos(updated);
+      saveAnonTodos(updated);
+      setAdding(false);
+      return;
+    }
+
+    // ── Logged-in: save to Supabase ──
     const encrypted = await encryptTodoList(fields, authId);
     const { data, error } = await supabase
       .from("todos")
@@ -100,9 +130,17 @@ const TodoList = () => {
     setAdding(false);
   };
 
+  // ── Toggle ──
   const handleToggle = async (id, completed) => {
+    if (isAnon) {
+      const updated = todos.map((t) =>
+        t.id === id ? { ...t, completed: !completed } : t,
+      );
+      setTodos(updated);
+      saveAnonTodos(updated);
+      return;
+    }
     if (!authId) return;
-
     const { data, error } = await supabase
       .from("todos")
       .update({ completed: !completed })
@@ -117,7 +155,14 @@ const TodoList = () => {
     }
   };
 
+  // ── Delete ──
   const handleDelete = async (id) => {
+    if (isAnon) {
+      const updated = todos.filter((t) => t.id !== id);
+      setTodos(updated);
+      saveAnonTodos(updated);
+      return;
+    }
     const { error } = await supabase.from("todos").delete().eq("id", id);
     if (!error) setTodos((prev) => prev.filter((t) => t.id !== id));
   };
@@ -160,7 +205,11 @@ const TodoList = () => {
       <Header
         isDark={isDark}
         header="To-do List"
-        subHeader="Track your tasks and assignments — synced automatically"
+        subHeader={
+          isAnon
+            ? "Guest mode — data saved in this browser only"
+            : "Track your tasks and assignments — synced automatically"
+        }
         icon={<CheckSquare size={20} className="text-indigo-500" />}
       />
 
@@ -168,6 +217,9 @@ const TodoList = () => {
         <AdSenseAd />
 
         <div className="mt-5">
+          {/* ── Anon banner ── */}
+          <AnonBanner isDark={isDark} />
+
           <div className="grid grid-cols-3 gap-2.5 mb-4">
             {[
               { label: "Total", value: todos.length, color: "text-slate-700" },
@@ -180,7 +232,7 @@ const TodoList = () => {
             ].map(({ label, value, color }) => (
               <div
                 key={label}
-                className={` border ${isDark ? "bg-slate-800 border-slate-700" : "bg-slate-50 border-slate-100"} rounded-2xl p-3.5 text-center`}
+                className={`border ${isDark ? "bg-slate-800 border-slate-700" : "bg-slate-50 border-slate-100"} rounded-2xl p-3.5 text-center`}
               >
                 <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-widest mb-1">
                   {label}
@@ -192,13 +244,19 @@ const TodoList = () => {
             ))}
           </div>
 
-          {/* ── Free plan usage bar ── */}
+          {/* ── Limit bar ── */}
           <div className="mb-3">
-            <LimitBar feature="todos" count={todos.length} isDark={isDark} />
+            <LimitBar
+              feature="todos"
+              count={todos.length}
+              isDark={isDark}
+              isAnon={isAnon}
+            />
           </div>
 
           <AddTodoForm onAdd={handleAdd} loading={adding} isDark={isDark} />
 
+          {/* ── Filters ── */}
           <div className="mb-3">
             <button
               onClick={() => setShowFilter((v) => !v)}
@@ -283,8 +341,9 @@ const TodoList = () => {
             )}
           </div>
 
+          {/* ── Todo list ── */}
           <div
-            className={`border ${isDark ? "bg-slate-800 border-slate-700" : "bg-slate-50 border-slate-100"} rounded-2xl  p-4 mb-4`}
+            className={`border ${isDark ? "bg-slate-800 border-slate-700" : "bg-slate-50 border-slate-100"} rounded-2xl p-4 mb-4`}
           >
             {fetching ? (
               <div className="text-center py-8 text-slate-400">
@@ -318,19 +377,18 @@ const TodoList = () => {
           </div>
 
           <AdSenseAd />
-
           <p className="text-center text-[11px] text-slate-500 mt-5">
             To-do List · PH Study Tools 🇵🇭
           </p>
         </div>
       </div>
 
-      {/* ── Upgrade modal — shown when free limit reached ── */}
       {showUpgrade && (
         <UpgradeModal
           feature="todos"
           onClose={() => setShowUpgrade(false)}
           isDark={isDark}
+          isAnon={isAnon}
         />
       )}
 

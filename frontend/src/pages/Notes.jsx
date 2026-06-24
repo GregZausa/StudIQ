@@ -10,20 +10,32 @@ import AddNoteModal from "../components/modal/AddNoteModal";
 import { useTheme } from "../context/ThemeContext";
 import SearchBar from "../components/ui/SearchBar";
 import Header from "../components/layout/Header";
-import {
-  encryptNote,
-  decryptNotes,
-  encryptText,
-  decryptText,
-} from "../utils/crypto";
+import { encryptNote, decryptNotes, encryptText } from "../utils/crypto";
 import { useStreakContext } from "../context/StreakContext";
 import { useSubscription } from "../context/SubscriptionContext";
 import { isAtLimit } from "../utils/constants/premium.config";
 import { LimitBar } from "../components/PremiumGate";
 import UpgradeModal from "../components/modal/UpgradeModal";
+import AnonBanner from "../components/ui/AnonBanner";
+
+// ─── localStorage key for anon notes ─────────────────────────────────────────
+const ANON_NOTES_KEY = "studiq_anon_notes";
+
+const getAnonNotes = () => {
+  try {
+    return JSON.parse(localStorage.getItem(ANON_NOTES_KEY) || "[]");
+  } catch {
+    return [];
+  }
+};
+const saveAnonNotes = (notes) => {
+  try {
+    localStorage.setItem(ANON_NOTES_KEY, JSON.stringify(notes));
+  } catch {}
+};
 
 const Notes = () => {
-  const { userId, session } = useUser();
+  const { userId, session, isAnon } = useUser();
   const { isDark } = useTheme();
   const { logActivity } = useStreakContext();
   const { isPremium } = useSubscription() || { isPremium: false };
@@ -39,9 +51,18 @@ const Notes = () => {
 
   const authId = session?.user?.id;
 
+  // ── Fetch ──
   const fetchNotes = useCallback(async () => {
-    if (!userId || !authId) return;
     setFetching(true);
+    if (isAnon) {
+      setNotes(getAnonNotes());
+      setFetching(false);
+      return;
+    }
+    if (!userId || !authId) {
+      setFetching(false);
+      return;
+    }
 
     const { data, error } = await supabase
       .from("notes")
@@ -54,22 +75,46 @@ const Notes = () => {
       setNotes(decrypted);
     }
     setFetching(false);
-  }, [userId, authId]);
+  }, [userId, authId, isAnon]);
 
   useEffect(() => {
     fetchNotes();
   }, [fetchNotes]);
 
-  const handleAdd = async (fields) => {
-    if (!userId || !authId) return;
-
-    // ── Premium gate: check free limit before adding ──
-    if (isAtLimit("notes", notes.length, isPremium)) {
+  // ── Open modal — gated ──
+  const handleOpenAdd = () => {
+    if (isAtLimit("notes", notes.length, isPremium, isAnon)) {
       setShowUpgrade(true);
       return;
     }
+    setShowModal(true);
+  };
 
+  // ── Add ──
+  const handleAdd = async (fields) => {
+    if (isAtLimit("notes", notes.length, isPremium, isAnon)) {
+      setShowUpgrade(true);
+      return;
+    }
     setAdding(true);
+
+    if (isAnon) {
+      const newNote = {
+        id: crypto.randomUUID(),
+        title: fields.title || "Untitled",
+        content: fields.content || "",
+        color: fields.color || "yellow",
+        subject: fields.subject || null,
+        updated_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+      };
+      const updated = [newNote, ...notes];
+      setNotes(updated);
+      saveAnonNotes(updated);
+      setAdding(false);
+      setShowModal(false);
+      return;
+    }
 
     const encrypted = await encryptNote(fields, authId);
     const { data, error } = await supabase
@@ -83,14 +128,23 @@ const Notes = () => {
       setNotes((prev) => [decrypted[0], ...prev]);
       await logActivity("add_note");
     }
-
     setAdding(false);
   };
 
+  // ── Update ──
   const handleUpdate = async (id, fields) => {
+    if (isAnon) {
+      const updated = notes.map((n) =>
+        n.id === id
+          ? { ...n, ...fields, updated_at: new Date().toISOString() }
+          : n,
+      );
+      setNotes(updated);
+      saveAnonNotes(updated);
+      return;
+    }
     if (!authId) return;
 
-    // Encrypt only text fields, pass others (color, subject) as-is
     const encFields = { ...fields };
     if (fields.title) encFields.title = await encryptText(fields.title, authId);
     if (fields.content)
@@ -104,13 +158,19 @@ const Notes = () => {
       .single();
 
     if (!error && data) {
-      // Decrypt for local state
       const decrypted = await decryptNotes([data], authId);
       setNotes((prev) => prev.map((n) => (n.id === id ? decrypted[0] : n)));
     }
   };
 
+  // ── Delete ──
   const handleDelete = async (id) => {
+    if (isAnon) {
+      const updated = notes.filter((n) => n.id !== id);
+      setNotes(updated);
+      saveAnonNotes(updated);
+      return;
+    }
     const { error } = await supabase.from("notes").delete().eq("id", id);
     if (!error) setNotes((prev) => prev.filter((n) => n.id !== id));
   };
@@ -135,22 +195,17 @@ const Notes = () => {
 
   const activeFilters = [filterColor, filterSubject].filter(Boolean).length;
 
-  // ── Open the "add note" modal — gated by limit ──
-  const handleOpenAdd = () => {
-    if (isAtLimit("notes", notes.length, isPremium)) {
-      setShowUpgrade(true);
-      return;
-    }
-    setShowModal(true);
-  };
-
   return (
     <div className="max-w-4xl mx-auto">
       <Header
         isDark={isDark}
         header="Notes"
         icon={<StickyNote size={20} className="text-amber-500" />}
-        subHeader={`${notes.length} note${notes.length !== 1 ? "s" : ""} saved`}
+        subHeader={
+          isAnon
+            ? `${notes.length} note${notes.length !== 1 ? "s" : ""} (guest mode)`
+            : `${notes.length} note${notes.length !== 1 ? "s" : ""} saved`
+        }
         buttoNlabel="New note"
         buttonIcon={<Plus size={15} />}
         buttonStyle="default"
@@ -159,9 +214,17 @@ const Notes = () => {
 
       <AdSenseAd />
 
-      {/* ── Free plan usage bar ── */}
+      {/* ── Anon banner ── */}
+      <AnonBanner isDark={isDark} />
+
+      {/* ── Limit bar ── */}
       <div className="mb-4">
-        <LimitBar feature="notes" count={notes.length} isDark={isDark} />
+        <LimitBar
+          feature="notes"
+          count={notes.length}
+          isDark={isDark}
+          isAnon={isAnon}
+        />
       </div>
 
       {/* ── Search + filters ── */}
@@ -200,11 +263,7 @@ const Notes = () => {
                 setFilterColor("");
                 setFilterSubject("");
               }}
-              className={`flex items-center gap-1 px-3 py-2 rounded-xl border text-xs transition-colors cursor-pointer hover:text-red-400 ${
-                isDark
-                  ? "bg-slate-800 border-slate-700 text-slate-200"
-                  : "bg-white border-slate-200 text-slate-600"
-              }`}
+              className={`flex items-center gap-1 px-3 py-2 rounded-xl border text-xs transition-colors cursor-pointer hover:text-red-400 ${isDark ? "bg-slate-800 border-slate-700 text-slate-200" : "bg-white border-slate-200 text-slate-600"}`}
             >
               <X size={11} /> Clear
             </button>
@@ -257,12 +316,12 @@ const Notes = () => {
         />
       )}
 
-      {/* ── Upgrade modal — shown when free limit reached ── */}
       {showUpgrade && (
         <UpgradeModal
           feature="notes"
           onClose={() => setShowUpgrade(false)}
           isDark={isDark}
+          isAnon={isAnon}
         />
       )}
 
@@ -273,7 +332,7 @@ const Notes = () => {
       <style>{`
         @keyframes fadeSlideIn {
           from { opacity: 0; transform: translateY(-8px); }
-          to   { opacity: 1; transform: translateY(0);    }
+          to   { opacity: 1; transform: translateY(0); }
         }
       `}</style>
     </div>

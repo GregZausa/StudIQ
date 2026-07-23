@@ -17,14 +17,16 @@ import { useTheme } from "../context/ThemeContext";
 import { decryptTodoList, encryptTodoList } from "../utils/crypto";
 import { useStreakContext } from "../context/StreakContext";
 import { useSubscription } from "../context/SubscriptionContext";
-import { isAtLimit } from "../utils/constants/premium.config";
+import {
+  isAtLimit,
+  FREE_LIMITS,
+  ANON_LIMITS,
+} from "../utils/constants/premium.config";
 import { LimitBar } from "../components/PremiumGate";
 import UpgradeModal from "../components/modal/UpgradeModal";
 import AnonBanner from "../components/ui/AnonBanner";
 
-// ─── localStorage key for anon todos ─────────────────────────────────────────
 const ANON_TODOS_KEY = "studiq_anon_todos";
-
 const getAnonTodos = () => {
   try {
     return JSON.parse(localStorage.getItem(ANON_TODOS_KEY) || "[]");
@@ -32,9 +34,9 @@ const getAnonTodos = () => {
     return [];
   }
 };
-const saveAnonTodos = (todos) => {
+const saveAnonTodos = (t) => {
   try {
-    localStorage.setItem(ANON_TODOS_KEY, JSON.stringify(todos));
+    localStorage.setItem(ANON_TODOS_KEY, JSON.stringify(t));
   } catch {}
 };
 
@@ -49,7 +51,6 @@ const TodoList = () => {
   const [adding, setAdding] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
-
   const [filterSubject, setFilterSubject] = useState("");
   const [filterPriority, setFilterPriority] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
@@ -57,7 +58,6 @@ const TodoList = () => {
 
   const authId = session?.user?.id;
 
-  // ── Fetch: localStorage for anon, Supabase for logged-in ──
   const fetchTodos = useCallback(async () => {
     setFetching(true);
     if (isAnon) {
@@ -76,10 +76,7 @@ const TodoList = () => {
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
 
-    if (!error && data) {
-      const decrypted = await decryptTodoList(data, authId);
-      setTodos(decrypted);
-    }
+    if (!error && data) setTodos(await decryptTodoList(data, authId));
     setFetching(false);
   }, [userId, authId, isAnon]);
 
@@ -87,8 +84,8 @@ const TodoList = () => {
     fetchTodos();
   }, [fetchTodos]);
 
-  // ── Add ──
   const handleAdd = async (fields) => {
+    // ── UI gate ──
     if (isAtLimit("todos", todos.length, isPremium, isAnon)) {
       setShowUpgrade(true);
       return;
@@ -97,7 +94,13 @@ const TodoList = () => {
     setAdding(true);
 
     if (isAnon) {
-      // ── Anon: save to localStorage ──
+      // ── Anon: re-check localStorage count (extra safety) ──
+      const current = getAnonTodos();
+      if (current.length >= ANON_LIMITS.todos) {
+        setShowUpgrade(true);
+        setAdding(false);
+        return;
+      }
       const newTodo = {
         id: crypto.randomUUID(),
         title: fields.title,
@@ -107,14 +110,26 @@ const TodoList = () => {
         completed: false,
         created_at: new Date().toISOString(),
       };
-      const updated = [newTodo, ...todos];
+      const updated = [newTodo, ...current];
       setTodos(updated);
       saveAnonTodos(updated);
       setAdding(false);
       return;
     }
 
-    // ── Logged-in: save to Supabase ──
+    // ── Logged-in: re-count from DB before insert ──
+    const { count } = await supabase
+      .from("todos")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId);
+
+    const limit = isPremium ? null : FREE_LIMITS.todos;
+    if (limit !== null && count >= limit) {
+      setShowUpgrade(true);
+      setAdding(false);
+      return;
+    }
+
     const encrypted = await encryptTodoList(fields, authId);
     const { data, error } = await supabase
       .from("todos")
@@ -130,7 +145,6 @@ const TodoList = () => {
     setAdding(false);
   };
 
-  // ── Toggle ──
   const handleToggle = async (id, completed) => {
     if (isAnon) {
       const updated = todos.map((t) =>
@@ -147,7 +161,6 @@ const TodoList = () => {
       .eq("id", id)
       .select()
       .single();
-
     if (!error && data) {
       const decrypted = await decryptTodoList([data], authId);
       setTodos((prev) => prev.map((t) => (t.id === id ? decrypted[0] : t)));
@@ -155,7 +168,6 @@ const TodoList = () => {
     }
   };
 
-  // ── Delete ──
   const handleDelete = async (id) => {
     if (isAnon) {
       const updated = todos.filter((t) => t.id !== id);
@@ -215,9 +227,7 @@ const TodoList = () => {
 
       <div className="max-w-2xl mx-auto px-4 pb-16">
         <AdSenseAd />
-
         <div className="mt-5">
-          {/* ── Anon banner ── */}
           <AnonBanner isDark={isDark} />
 
           <div className="grid grid-cols-3 gap-2.5 mb-4">
@@ -244,7 +254,6 @@ const TodoList = () => {
             ))}
           </div>
 
-          {/* ── Limit bar ── */}
           <div className="mb-3">
             <LimitBar
               feature="todos"
@@ -256,7 +265,6 @@ const TodoList = () => {
 
           <AddTodoForm onAdd={handleAdd} loading={adding} isDark={isDark} />
 
-          {/* ── Filters ── */}
           <div className="mb-3">
             <button
               onClick={() => setShowFilter((v) => !v)}
@@ -270,8 +278,7 @@ const TodoList = () => {
                     : "bg-white border-slate-100 text-slate-600 hover:bg-slate-50"
               }`}
             >
-              <SlidersHorizontal size={13} />
-              Filters
+              <SlidersHorizontal size={13} /> Filters
               {activeFilters > 0 && (
                 <span className="bg-indigo-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center">
                   {activeFilters}
@@ -281,7 +288,7 @@ const TodoList = () => {
 
             {showFilter && (
               <div
-                className={`border ${isDark ? "bg-slate-800 border-slate-700" : "bg-slate-50 border-slate-100"} rounded-2xl p-4 mt-2 animate-[fadeSlideIn_0.2s_ease]`}
+                className={`border ${isDark ? "bg-slate-800 border-slate-700" : "bg-slate-50 border-slate-100"} rounded-2xl p-4 mt-2`}
               >
                 <div className="grid grid-cols-2 gap-3 mb-3">
                   <div>
@@ -332,7 +339,7 @@ const TodoList = () => {
                       setFilterPriority("");
                       setFilterStatus("");
                     }}
-                    className={`flex items-center gap-1.5 text-xs ${isDark ? "text-slate-50" : "text-slate-800"} hover:text-red-400 transition-colors cursor-pointer`}
+                    className={`flex items-center gap-1.5 text-xs ${isDark ? "text-slate-50" : "text-slate-800"} hover:text-red-400 cursor-pointer`}
                   >
                     <X size={12} /> Clear all filters
                   </button>
@@ -341,7 +348,6 @@ const TodoList = () => {
             )}
           </div>
 
-          {/* ── Todo list ── */}
           <div
             className={`border ${isDark ? "bg-slate-800 border-slate-700" : "bg-slate-50 border-slate-100"} rounded-2xl p-4 mb-4`}
           >
@@ -393,10 +399,7 @@ const TodoList = () => {
       )}
 
       <style>{`
-        @keyframes fadeSlideIn {
-          from { opacity: 0; transform: translateY(-8px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
     </div>
   );

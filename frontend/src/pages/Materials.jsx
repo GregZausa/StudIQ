@@ -2,9 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../config/supabase";
 import { useUser } from "../context/UserContext";
 import AdSenseAd from "../utils/AdSenseAd";
-import FloatingLabelInput from "../components/ui/FloatingLabelInput";
 import SelectBox from "../components/ui/SelectBox";
-import { BookOpen, Plus, X, Inbox, Search } from "lucide-react";
+import { BookOpen, Plus, X, Inbox } from "lucide-react";
 import { TYPE_FILTER } from "../utils/constants/materials.config";
 import SubjectGroup from "../components/SubjectGroup";
 import AddMaterialModal from "../components/modal/AddMaterialModal";
@@ -17,11 +16,12 @@ import { useSubscription } from "../context/SubscriptionContext";
 import { isAtLimit } from "../utils/constants/premium.config";
 import { LimitBar } from "../components/PremiumGate";
 import UpgradeModal from "../components/modal/UpgradeModal";
+import SignInPrompt from "../components/ui/SignInPrompt";
 
 const Materials = () => {
-  const { userId, session } = useUser();
+  const { userId, session, isAnon } = useUser();
   const { isDark } = useTheme();
-  const { logActivity } = useStreakContext(); // ← was missing, caused crash on add
+  const { logActivity } = useStreakContext();
   const { isPremium } = useSubscription() || { isPremium: false };
   const authId = session?.user?.id;
 
@@ -35,8 +35,14 @@ const Materials = () => {
   const [filterSubject, setFilterSubject] = useState("");
   const [groupBy, setGroupBy] = useState("subject");
 
+  // ── Anon guard — materials require an account ──
+  if (isAnon) return <SignInPrompt feature="Materials" isDark={isDark} />;
+
   const fetchMaterials = useCallback(async () => {
-    if (!userId) return;
+    if (!userId) {
+      setFetching(false);
+      return;
+    }
     setFetching(true);
     const { data, error } = await supabase
       .from("materials")
@@ -55,17 +61,24 @@ const Materials = () => {
     fetchMaterials();
   }, [fetchMaterials]);
 
+  const handleOpenAdd = () => {
+    if (isAtLimit("materials", materials.length, isPremium, false)) {
+      setShowUpgrade(true);
+      return;
+    }
+    setShowModal(true);
+  };
+
   const handleAdd = async (fields) => {
     if (!userId || !authId) return;
 
-    // ── Premium gate: check free limit before adding ──
-    if (isAtLimit("materials", materials.length, isPremium)) {
+    // ── Hard gate: double-check limit even if UI was bypassed ──
+    if (isAtLimit("materials", materials.length, isPremium, false)) {
       setShowUpgrade(true);
       return;
     }
 
     setAdding(true);
-
     const encrypted = await encryptMaterial(fields, authId);
     const { data, error } = await supabase
       .from("materials")
@@ -78,22 +91,13 @@ const Materials = () => {
       setMaterials((prev) => [decrypted[0], ...prev]);
       await logActivity("add_material");
     }
-
     setAdding(false);
+    setShowModal(false);
   };
 
   const handleDelete = async (id) => {
     const { error } = await supabase.from("materials").delete().eq("id", id);
     if (!error) setMaterials((prev) => prev.filter((m) => m.id !== id));
-  };
-
-  // ── Open the "add material" modal — gated by limit ──
-  const handleOpenAdd = () => {
-    if (isAtLimit("materials", materials.length, isPremium)) {
-      setShowUpgrade(true);
-      return;
-    }
-    setShowModal(true);
   };
 
   const subjects = [
@@ -150,7 +154,6 @@ const Materials = () => {
       />
       <AdSenseAd />
 
-      {/* ── Free plan usage bar ── */}
       <div className="mb-4">
         <LimitBar
           feature="materials"
@@ -180,7 +183,7 @@ const Materials = () => {
         ].map(({ label, value, color }) => (
           <div
             key={label}
-            className={`${isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200"} rounded-2xl p-3 border  text-center`}
+            className={`${isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200"} rounded-2xl p-3 border text-center`}
           >
             <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-widest mb-1">
               {label}
@@ -191,6 +194,7 @@ const Materials = () => {
           </div>
         ))}
       </div>
+
       <div className="space-y-2 mb-5">
         <SearchBar
           isDark={isDark}
@@ -200,7 +204,6 @@ const Materials = () => {
           buttonIcon={<X size={13} />}
           placeholder="Search materials..."
         />
-
         <div className="flex gap-2 flex-wrap items-center">
           <div className="w-40">
             <SelectBox
@@ -234,7 +237,7 @@ const Materials = () => {
                 setFilterType("");
                 setFilterSubject("");
               }}
-              className="flex items-center gap-1 px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-400 hover:text-red-400 transition-colors cursor-pointer bg-white"
+              className="flex items-center gap-1 px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-400 hover:text-red-400 cursor-pointer bg-white"
             >
               <X size={11} /> Clear
             </button>
@@ -251,7 +254,7 @@ const Materials = () => {
         </div>
       ) : filtered.length === 0 ? (
         <div
-          className={`rounded-2xl border ${isDark ? "bg-slate-800 border-slate-700 text-slate-200" : "bg-white  border-slate-100 text-slate-600"} p-12 text-center `}
+          className={`rounded-2xl border ${isDark ? "bg-slate-800 border-slate-700 text-slate-200" : "bg-white border-slate-100 text-slate-600"} p-12 text-center`}
         >
           <Inbox size={32} className="mx-auto mb-2 opacity-50" />
           <div className="text-sm font-medium">
@@ -271,6 +274,7 @@ const Materials = () => {
           />
         ))
       )}
+
       <AdSenseAd />
 
       {showModal && (
@@ -281,8 +285,6 @@ const Materials = () => {
           loading={adding}
         />
       )}
-
-      {/* ── Upgrade modal — shown when free limit reached ── */}
       {showUpgrade && (
         <UpgradeModal
           feature="materials"

@@ -57,4 +57,31 @@
     <loc>https://studiq.site/blog/burnout</loc>
   </url>
 
+  <url>
+    <loc>https://studiq.site/dashboard/quiz-generator</loc>
+  </url>
+
+  <url>
+    <loc>https://studiq.site/dashboard/gpa-calculator</loc>
+  </url>
+
+  <url>
+    <loc>https://studiq.site/dashboard/pomodoro</loc>
+  </url>
+  
+  <url>
+    <loc>https://studiq.site/dashboard/explore</loc>
+  </url>
+
+  <url>
+    <loc>https://studiq.site/dashboard/notes</loc>
+  </url>
+
+  <url>
+    <loc>https://studiq.site/dashboard/todos</loc>
+  </url>
+
+  <url>
+    <loc>https://studiq.site/dashboard</loc>
+  </url>
 </urlset>

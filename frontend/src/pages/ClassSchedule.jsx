@@ -30,6 +30,7 @@ import { useSubscription } from "../context/SubscriptionContext";
 import { isAtLimit } from "../utils/constants/premium.config";
 import { LimitBar } from "../components/PremiumGate";
 import UpgradeModal from "../components/modal/UpgradeModal";
+import SignInPrompt from "../components/ui/SignInPrompt";
 
 const AddSubjectModal = ({ onAdd, onClose, loading, isDark }) => {
   const [name, setName] = useState("");
@@ -69,7 +70,6 @@ const AddSubjectModal = ({ onAdd, onClose, loading, isDark }) => {
             <X size={15} />
           </button>
         </div>
-
         <div className="space-y-3">
           <FloatingLabelInput
             label="Subject name *"
@@ -95,7 +95,6 @@ const AddSubjectModal = ({ onAdd, onClose, loading, isDark }) => {
             onChange={setProfessor}
             isDark={isDark}
           />
-
           <div>
             <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-2">
               Color
@@ -106,12 +105,11 @@ const AddSubjectModal = ({ onAdd, onClose, loading, isDark }) => {
                   key={c.value}
                   onClick={() => setColor(c.value)}
                   title={c.label}
-                  className={`w-7 h-7 rounded-full transition-all cursor-pointer ${c.bg} ${color === c.value ? "ring-2 ring-offset-2 ring-slate-400 scale-110" : "opacity-60 hover:opacity-100"}`}
+                  className={`w-7 h-7 rounded-full cursor-pointer ${c.bg} ${color === c.value ? "ring-2 ring-offset-2 ring-slate-400 scale-110" : "opacity-60 hover:opacity-100"}`}
                 />
               ))}
             </div>
           </div>
-
           {name && (
             <div
               className={`px-3 py-2 rounded-xl border ${getColor(color).light} ${getColor(color).border}`}
@@ -128,14 +126,11 @@ const AddSubjectModal = ({ onAdd, onClose, loading, isDark }) => {
               )}
             </div>
           )}
-
           {error && <p className="text-xs text-red-500">{error}</p>}
         </div>
-
         <p className="text-[10px] text-slate-400 mt-3">
-          💡 After adding, you can attach multiple time slots to this subject.
+          💡 After adding, you can attach multiple time slots.
         </p>
-
         <div className="flex gap-2 mt-4">
           <button
             onClick={onClose}
@@ -162,14 +157,11 @@ const AddSlotModal = ({ subject, onAdd, onClose, loading, isDark }) => {
   const [timeEnd, setTimeEnd] = useState("08:30");
   const [room, setRoom] = useState("");
   const [error, setError] = useState("");
-
   const color = getColor(subject.color);
-
   const toggleDay = (day) =>
     setDays((prev) =>
       prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day],
     );
-
   const handleSubmit = () => {
     if (days.length === 0) {
       setError("Select at least one day.");
@@ -186,11 +178,9 @@ const AddSlotModal = ({ subject, onAdd, onClose, loading, isDark }) => {
       room: room.trim() || null,
     });
   };
-
   const base = isDark
     ? "bg-slate-900 border-slate-700 text-slate-100"
     : "bg-white border-slate-200 text-slate-800";
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm">
       <div
@@ -211,7 +201,6 @@ const AddSlotModal = ({ subject, onAdd, onClose, loading, isDark }) => {
             <X size={15} />
           </button>
         </div>
-
         <div className="space-y-3">
           <div>
             <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-2">
@@ -227,13 +216,7 @@ const AddSlotModal = ({ subject, onAdd, onClose, loading, isDark }) => {
                       toggleDay(day);
                       setError("");
                     }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
-                      active
-                        ? `${color.bg} border-transparent text-white`
-                        : isDark
-                          ? "border-slate-700 text-slate-400 hover:border-indigo-400"
-                          : "border-slate-200 text-slate-500 hover:border-indigo-300"
-                    }`}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer border ${active ? `${color.bg} border-transparent text-white` : isDark ? "border-slate-700 text-slate-400 hover:border-indigo-400" : "border-slate-200 text-slate-500 hover:border-indigo-300"}`}
                   >
                     {day}
                   </button>
@@ -241,7 +224,6 @@ const AddSlotModal = ({ subject, onAdd, onClose, loading, isDark }) => {
               })}
             </div>
           </div>
-
           <div className="grid grid-cols-2 gap-3">
             <div>
               <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-1.5">
@@ -266,7 +248,6 @@ const AddSlotModal = ({ subject, onAdd, onClose, loading, isDark }) => {
               />
             </div>
           </div>
-
           <FloatingLabelInput
             label="Room (optional)"
             type="text"
@@ -282,10 +263,8 @@ const AddSlotModal = ({ subject, onAdd, onClose, loading, isDark }) => {
               {room && ` · ${room}`}
             </div>
           )}
-
           {error && <p className="text-xs text-red-500">{error}</p>}
         </div>
-
         <div className="flex gap-2 mt-5">
           <button
             onClick={onClose}
@@ -311,14 +290,12 @@ const NewSemesterModal = ({ onClose, onCreate, existingLabels, isDark }) => {
   const [custom, setCustom] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
   const available = SEMESTER_LABELS.filter(
     (s) => !existingLabels.includes(s.value),
   );
   const base = isDark
     ? "bg-slate-900 border-slate-700 text-slate-100"
     : "bg-white border-slate-200 text-slate-800";
-
   const handleCreate = async () => {
     if (!label.trim()) {
       setError("Enter a semester label.");
@@ -329,7 +306,6 @@ const NewSemesterModal = ({ onClose, onCreate, existingLabels, isDark }) => {
     setLoading(false);
     onClose();
   };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm">
       <div
@@ -344,7 +320,6 @@ const NewSemesterModal = ({ onClose, onCreate, existingLabels, isDark }) => {
             <X size={15} />
           </button>
         </div>
-
         <div className="space-y-3">
           {!custom ? (
             <div>
@@ -370,7 +345,6 @@ const NewSemesterModal = ({ onClose, onCreate, existingLabels, isDark }) => {
               isDark={isDark}
             />
           )}
-
           <button
             onClick={() => {
               setCustom((v) => !v);
@@ -380,10 +354,8 @@ const NewSemesterModal = ({ onClose, onCreate, existingLabels, isDark }) => {
           >
             {custom ? "← Choose from presets" : "Enter custom label →"}
           </button>
-
           {error && <p className="text-xs text-red-500">{error}</p>}
         </div>
-
         <div className="flex gap-2 mt-5">
           <button
             onClick={onClose}
@@ -405,9 +377,12 @@ const NewSemesterModal = ({ onClose, onCreate, existingLabels, isDark }) => {
 };
 
 const ClassSchedule = () => {
-  const { userId } = useUser();
+  const { userId, isAnon } = useUser();
   const { isDark } = useTheme();
   const { isPremium } = useSubscription() || { isPremium: false };
+
+  // ── Anon guard — schedule requires an account ──
+  if (isAnon) return <SignInPrompt feature="Class Schedule" isDark={isDark} />;
 
   const [semesters, setSemesters] = useState([]);
   const [activeSem, setActiveSem] = useState(null);
@@ -429,12 +404,10 @@ const ClassSchedule = () => {
       .select("*")
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
-
     const list = data || [];
     setSemesters(list);
-    if (list.length > 0 && !activeSem) {
+    if (list.length > 0 && !activeSem)
       setActiveSem(list.find((s) => s.is_active) || list[0]);
-    }
   }, [userId, activeSem]);
 
   const fetchSubjects = useCallback(async () => {
@@ -443,15 +416,13 @@ const ClassSchedule = () => {
       return;
     }
     setFetching(true);
-
-    const { data: subjectsData } = await supabase
+    const { data } = await supabase
       .from("subjects")
       .select("*, schedule_slots(*)")
       .eq("user_id", userId)
       .eq("semester_id", activeSem.id)
       .order("created_at", { ascending: true });
-
-    setSubjects(subjectsData || []);
+    setSubjects(data || []);
     setFetching(false);
   }, [userId, activeSem]);
 
@@ -463,6 +434,11 @@ const ClassSchedule = () => {
   }, [fetchSubjects]);
 
   const handleCreateSemester = async (label) => {
+    // ── Hard gate: double-check limit ──
+    if (isAtLimit("semesters", semesters.length, isPremium, false)) {
+      setShowUpgrade(true);
+      return;
+    }
     const { data, error } = await supabase
       .from("semesters")
       .insert({ user_id: userId, label, is_active: true })
@@ -474,9 +450,8 @@ const ClassSchedule = () => {
     }
   };
 
-  // ── Open "new semester" modal — gated by limit ──
   const handleOpenNewSem = () => {
-    if (isAtLimit("semesters", semesters.length, isPremium)) {
+    if (isAtLimit("semesters", semesters.length, isPremium, false)) {
       setShowUpgrade(true);
       return;
     }
@@ -484,8 +459,7 @@ const ClassSchedule = () => {
   };
 
   const handleCopySemester = async () => {
-    // ── Premium gate: copying creates a new semester too ──
-    if (isAtLimit("semesters", semesters.length, isPremium)) {
+    if (isAtLimit("semesters", semesters.length, isPremium, false)) {
       setShowUpgrade(true);
       return;
     }
@@ -500,7 +474,6 @@ const ClassSchedule = () => {
       .select()
       .single();
     if (error || !newSem) return;
-
     for (const subj of subjects) {
       const { data: newSubj } = await supabase
         .from("subjects")
@@ -514,7 +487,6 @@ const ClassSchedule = () => {
         })
         .select()
         .single();
-
       if (newSubj && subj.schedule_slots?.length > 0) {
         const slots = subj.schedule_slots.map(
           ({ id, created_at, subject_id, ...rest }) => ({
@@ -525,7 +497,6 @@ const ClassSchedule = () => {
         await supabase.from("schedule_slots").insert(slots);
       }
     }
-
     setSemesters((prev) => [newSem, ...prev]);
     setActiveSem(newSem);
   };
@@ -551,7 +522,6 @@ const ClassSchedule = () => {
       .insert({ ...fields, user_id: userId, semester_id: activeSem.id })
       .select()
       .single();
-
     if (!error && data) {
       setSubjects((prev) => [...prev, { ...data, schedule_slots: [] }]);
       setShowAddSubj(false);
@@ -576,7 +546,6 @@ const ClassSchedule = () => {
       .insert({ ...fields, subject_id: slotTarget.id })
       .select()
       .single();
-
     if (!error && data) {
       setSubjects((prev) =>
         prev.map((s) =>
@@ -596,7 +565,7 @@ const ClassSchedule = () => {
       .from("schedule_slots")
       .delete()
       .eq("id", slotId);
-    if (!error) {
+    if (!error)
       setSubjects((prev) =>
         prev.map((s) => ({
           ...s,
@@ -605,7 +574,6 @@ const ClassSchedule = () => {
           ),
         })),
       );
-    }
   };
 
   const openAddSlot = (subject) => {
@@ -639,27 +607,25 @@ const ClassSchedule = () => {
             {totalSlots} time slot{totalSlots !== 1 ? "s" : ""}
           </p>
         </div>
-
         <div className="flex items-center gap-2 flex-wrap">
           <div className={`flex gap-1 p-1 rounded-xl border ${cardBase}`}>
             <button
               onClick={() => setView("grid")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${view === "grid" ? "bg-indigo-500 text-white" : textMuted}`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer ${view === "grid" ? "bg-indigo-500 text-white" : textMuted}`}
             >
               <LayoutGrid size={12} /> Grid
             </button>
             <button
               onClick={() => setView("list")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${view === "list" ? "bg-indigo-500 text-white" : textMuted}`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer ${view === "list" ? "bg-indigo-500 text-white" : textMuted}`}
             >
               <List size={12} /> List
             </button>
           </div>
-
           <button
             onClick={() => setShowAddSubj(true)}
             disabled={!activeSem}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold transition-colors cursor-pointer disabled:opacity-40"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold cursor-pointer disabled:opacity-40"
           >
             <Plus size={15} /> Add subject
           </button>
@@ -668,7 +634,6 @@ const ClassSchedule = () => {
 
       <AdSenseAd />
 
-      {/* ── Free plan usage bar (semester limit) ── */}
       <div className="mb-4">
         <LimitBar
           feature="semesters"
@@ -699,18 +664,17 @@ const ClassSchedule = () => {
             />
           </div>
         )}
-
         <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={handleOpenNewSem}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold cursor-pointer transition-colors ${isDark ? "border-slate-700 text-slate-300 hover:bg-slate-700" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold cursor-pointer ${isDark ? "border-slate-700 text-slate-300 hover:bg-slate-700" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}
           >
             <Plus size={12} /> New sem
           </button>
           {activeSem && subjects.length > 0 && (
             <button
               onClick={handleCopySemester}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold cursor-pointer transition-colors ${isDark ? "border-slate-700 text-slate-300 hover:bg-slate-700" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold cursor-pointer ${isDark ? "border-slate-700 text-slate-300 hover:bg-slate-700" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}
             >
               <Copy size={12} /> Copy sem
             </button>
@@ -817,7 +781,6 @@ const ClassSchedule = () => {
       )}
 
       <AdSenseAd />
-
       <p className="text-center text-[11px] text-slate-300 mt-6">
         Class Schedule · StudIQ PH 🇵🇭
       </p>
@@ -850,8 +813,6 @@ const ClassSchedule = () => {
           existingLabels={semesters.map((s) => s.label)}
         />
       )}
-
-      {/* ── Upgrade modal — shown when semester limit reached ── */}
       {showUpgrade && (
         <UpgradeModal
           feature="semesters"
